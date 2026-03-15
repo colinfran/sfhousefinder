@@ -6,6 +6,7 @@ import { getMongoDb, isMongoConfigured } from "@/lib/mongodb"
 
 export type DashboardFilters = {
   city: string
+  rooms: "all" | "2" | "3plus"
   source: "all" | "zillow" | "craigslist"
 }
 
@@ -73,6 +74,7 @@ type DashboardResult = {
 
 const DEFAULT_FILTERS: DashboardFilters = {
   city: "all",
+  rooms: "all",
   source: "all",
 }
 
@@ -142,6 +144,14 @@ const buildBaseFilter = (filters: DashboardFilters): Filter<ListingDocument> => 
 
   if (filters.source !== "all") {
     mongoFilter.source = filters.source
+  }
+
+  if (filters.rooms === "2") {
+    mongoFilter.beds = Number(filters.rooms)
+  }
+
+  if (filters.rooms === "3plus") {
+    mongoFilter.beds = { $gte: 3 }
   }
 
   return mongoFilter
@@ -222,12 +232,16 @@ export const parseDashboardFilters = (
   searchParams?: Record<string, string | string[] | undefined>,
 ): DashboardFilters => {
   const city = normalizeParam(searchParams?.city).trim()
+  const roomsInput = normalizeParam(searchParams?.rooms).trim().toLowerCase()
   const sourceInput = normalizeParam(searchParams?.source).trim().toLowerCase()
+  const rooms: DashboardFilters["rooms"] =
+    roomsInput === "2" || roomsInput === "3plus" ? roomsInput : "all"
   const source: DashboardFilters["source"] =
     sourceInput === "zillow" || sourceInput === "craigslist" ? sourceInput : "all"
 
   return {
     city: city || DEFAULT_FILTERS.city,
+    rooms,
     source,
   }
 }

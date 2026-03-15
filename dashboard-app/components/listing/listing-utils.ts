@@ -54,6 +54,10 @@ export const buildQueryString = (
     params.set("city", nextFilters.city)
   }
 
+  if (nextFilters.rooms !== "all") {
+    params.set("rooms", nextFilters.rooms)
+  }
+
   if (nextFilters.source !== "all") {
     params.set("source", nextFilters.source)
   }

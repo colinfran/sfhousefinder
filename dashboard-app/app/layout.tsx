@@ -18,7 +18,18 @@ const display = Space_Grotesk({
   weight: ["500", "700"],
 })
 
+const metadataBase = (() => {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+
+  try {
+    return new URL(siteUrl)
+  } catch {
+    return new URL("http://localhost:3000")
+  }
+})()
+
 export const metadata: Metadata = {
+  metadataBase,
   title: {
     default: "sfhousefinder | Rental Dashboard",
     template: "%s | sfhousefinder",

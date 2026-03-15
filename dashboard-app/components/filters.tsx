@@ -1,10 +1,16 @@
-import Link from "next/link"
+"use client"
+
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import type { JSX } from "react"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type { DashboardFilters } from "@/lib/dashboard-data"
-import { cn } from "@/lib/utils"
-
-import { buildQueryString } from "./listing/listing-utils"
 
 type FiltersProps = {
   cityOptions: string[]
@@ -12,71 +18,77 @@ type FiltersProps = {
 }
 
 const Filters = ({ cityOptions, filters }: FiltersProps): JSX.Element => {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          className={cn(
-            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            filters.source === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-          href={buildQueryString(filters, { source: "all" })}
-        >
-          All sources
-        </Link>
-        <Link
-          className={cn(
-            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors",
-            filters.source === "zillow"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-          href={buildQueryString(filters, { source: "zillow" })}
-        >
-          Zillow
-        </Link>
-        <Link
-          className={cn(
-            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors",
-            filters.source === "craigslist"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-          href={buildQueryString(filters, { source: "craigslist" })}
-        >
-          Craigslist
-        </Link>
-      </div>
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          className={cn(
-            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            filters.city === "all"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground hover:text-foreground",
-          )}
-          href={buildQueryString(filters, { city: "all" })}
-        >
-          All cities
-        </Link>
-        {cityOptions.map((city) => (
-          <Link
-            className={cn(
-              "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              filters.city === city
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground",
-            )}
-            href={buildQueryString(filters, { city })}
-            key={city}
-          >
-            {city}
-          </Link>
-        ))}
-      </div>
+  const sourceOptions = [
+    { label: "All sources", value: "all" },
+    { label: "Zillow", value: "zillow" },
+    { label: "Craigslist", value: "craigslist" },
+  ] as const
+
+  const roomOptions = [
+    { label: "All rooms", value: "all" },
+    { label: "2 bedrooms", value: "2" },
+    { label: "3+ bedrooms", value: "3plus" },
+  ] as const
+
+  const allCityOptions = ["all", ...cityOptions]
+
+  const updateFilter = (key: "source" | "rooms" | "city", value: string): void => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (value === "all") {
+      params.delete(key)
+    } else {
+      params.set(key, value)
+    }
+
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname)
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <Select value={filters.source} onValueChange={(value) => updateFilter("source", value)}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="All sources" />
+        </SelectTrigger>
+        <SelectContent>
+          {sourceOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.rooms} onValueChange={(value) => updateFilter("rooms", value)}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="All rooms" />
+        </SelectTrigger>
+        <SelectContent>
+          {roomOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.city} onValueChange={(value) => updateFilter("city", value)}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="All cities" />
+        </SelectTrigger>
+        <SelectContent>
+          {allCityOptions.map((city) => (
+            <SelectItem key={city} value={city}>
+              {city === "all" ? "All cities" : city}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

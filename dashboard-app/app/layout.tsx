@@ -20,8 +20,8 @@ const display = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Housefinder | Rental Dashboard",
-    template: "%s | Housefinder",
+    default: "sfhousefinder | Rental Dashboard",
+    template: "%s | sfhousefinder",
   },
   description:
     "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
@@ -31,20 +31,20 @@ export const metadata: Metadata = {
     apple: "/icon.svg",
   },
   openGraph: {
-    title: "Housefinder | Rental Dashboard",
+    title: "sfhousefinder | Rental Dashboard",
     description:
       "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
     type: "website",
     images: [
       {
         url: "/og-image.jpg",
-        alt: "Housefinder rental dashboard preview",
+        alt: "sfhousefinder rental dashboard preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Housefinder | Rental Dashboard",
+    title: "sfhousefinder | Rental Dashboard",
     description:
       "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
     images: ["/og-image.jpg"],

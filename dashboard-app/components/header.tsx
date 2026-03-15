@@ -11,7 +11,7 @@ const Header = (): JSX.Element => {
         <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card">
           <Home className="h-4 w-4" />
         </div>
-        <div className="text-sm font-medium">Housefinder</div>
+        <div className="text-sm font-medium">sfhousefinder</div>
       </Link>
       <ThemeToggle />
     </header>

@@ -18,10 +18,10 @@ const getMongoDbName = (mongoUri: string): string => {
       return pathName
     }
   } catch {
-    return "housefinder"
+    return "sfhousefinder"
   }
 
-  return "housefinder"
+  return "sfhousefinder"
 }
 
 export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {

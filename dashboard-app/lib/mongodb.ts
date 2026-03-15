@@ -35,10 +35,10 @@ const getMongoDbName = (mongoUri: string): string => {
       return pathname
     }
   } catch {
-    return "housefinder"
+    return "sfhousefinder"
   }
 
-  return "housefinder"
+  return "sfhousefinder"
 }
 
 const getMongoClient = async (): Promise<MongoClient> => {

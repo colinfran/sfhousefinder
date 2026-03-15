@@ -1,4 +1,4 @@
-# housefinder
+# sfhousefinder
 
 Monorepo with two TypeScript apps:
 

@@ -1,21 +1,10 @@
 import "server-only"
 
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-
-import dotenv from "dotenv"
 import { Db, MongoClient } from "mongodb"
 
 declare global {
   var mongoClientPromise: Promise<MongoClient> | undefined
 }
-
-const currentFilePath = fileURLToPath(import.meta.url)
-const currentDirPath = path.dirname(currentFilePath)
-const workspaceRootPath = path.resolve(currentDirPath, "../..")
-
-dotenv.config({ path: path.join(workspaceRootPath, ".env") })
-dotenv.config({ path: path.join(workspaceRootPath, ".env.local"), override: true })
 
 const getMongoUri = (): string | null => {
   const mongoUri = process.env.MONGODB_URI ?? null

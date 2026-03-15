@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import type { DashboardListing } from "@/lib/dashboard-data"
 import { cn } from "@/lib/utils"
 
-import { formatCurrency, formatHomeType, formatTimestamp } from "./listing-utils"
+import { formatCurrency, formatHomeType, formatSource, formatTimestamp } from "./listing-utils"
 import { ListingImage } from "./listing-image"
 
 type ListingCardProps = {
@@ -39,8 +39,8 @@ const ListingCard = ({ listing }: ListingCardProps): JSX.Element => {
           >
             {listing.isActive ? "Active" : "Inactive"}
           </Badge>
-          <Badge className="capitalize backdrop-blur" variant="outline">
-            {listing.source}
+          <Badge className="backdrop-blur" variant="outline">
+            {formatSource(listing.source)}
           </Badge>
           <Badge className="backdrop-blur" variant="outline">
             {formatHomeType(listing.homeType)}

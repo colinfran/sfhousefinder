@@ -7,7 +7,7 @@ import type { DashboardListing } from "@/lib/dashboard-data"
 import { cn } from "@/lib/utils"
 
 import { ListingImage } from "./listing-image"
-import { formatCurrency, formatHomeType, formatTimestamp } from "./listing-utils"
+import { formatCurrency, formatHomeType, formatSource, formatTimestamp } from "./listing-utils"
 
 type ListingRowProps = {
   listing: DashboardListing
@@ -78,9 +78,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
 
       <div className="flex items-end justify-between gap-3 lg:hidden">
         <div className="flex min-w-0 items-center gap-3">
-          <Badge className="capitalize" variant="outline">
-            {listing.source}
-          </Badge>
+          <Badge variant="outline">{formatSource(listing.source)}</Badge>
           <span className="truncate text-xs text-muted-foreground">
             {formatTimestamp(listing.lastSeenAt)}
           </span>
@@ -110,9 +108,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
       </div>
 
       <div className="col-span-1 hidden lg:block">
-        <Badge className="capitalize" variant="outline">
-          {listing.source}
-        </Badge>
+        <Badge variant="outline">{formatSource(listing.source)}</Badge>
       </div>
 
       <div className="col-span-2 hidden lg:block">

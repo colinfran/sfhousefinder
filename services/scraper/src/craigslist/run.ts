@@ -23,7 +23,7 @@ import {
 } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
-import { sendDiscordAlert } from "../notifications/discord"
+import { sendDiscordAlert } from "../discord"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
 

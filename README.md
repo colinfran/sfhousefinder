@@ -3,7 +3,7 @@
 Monorepo with two TypeScript apps:
 
 - `dashboard-app`: Next.js 16 app (App Router) — displays rental listings from MongoDB
-- `services/scraper`: Node.js Puppeteer scraper — scrapes Zillow and Craigslist, persists results to MongoDB
+- `services/scraper`: Node.js Puppeteer scraper — scrapes Zillow, Craigslist, and Apartments.com, persists results to MongoDB
 
 ## Requirements
 
@@ -44,24 +44,32 @@ Monorepo with two TypeScript apps:
 - Scraper — Zillow (all cities):
 
   ```bash
-  npm run dev:scraper:zillow
+  npm run start:scraper:zillow
   ```
 
 - Scraper — Craigslist (all cities):
 
   ```bash
-  npm run dev:scraper:craigslist
+  npm run start:scraper:craigslist
+  ```
+
+- Scraper — Apartments.com (all cities):
+
+  ```bash
+  npm run start:scraper:apartments
   ```
 
   To run a single city directly from the scraper package:
 
   ```bash
-  npm --workspace services/scraper run dev:craigslist:all-cities
+  npm --workspace services/scraper run start:craigslist:all-cities
   # or for zillow:
-  npm --workspace services/scraper run dev:zillow:all-cities
+  npm --workspace services/scraper run start:zillow:all-cities
+  # or for apartments.com:
+  npm --workspace services/scraper run start:apartments.com:all-cities
   ```
 
-  Results are written to separate MongoDB collections (`zillow_listings` and `craigslist_listings`) and also exported as JSON to `services/scraper/output/`.
+  Results are written to separate MongoDB collections (`zillow`, `craigslist`, and `apartments.com`) and also exported as JSON to `services/scraper/output/`.
 
 ## Scraper tuning
 
@@ -87,6 +95,15 @@ Craigslist scraper timing can be tuned with:
 | `CRAIGSLIST_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
 | `CRAIGSLIST_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
 
+Apartments.com scraper timing can be tuned with:
+
+| Variable | Default | Description |
+|---|---|---|
+| `APARTMENTS_NAV_TIMEOUT_MS` | `90000` | Page navigation timeout (ms) |
+| `APARTMENTS_LISTINGS_TIMEOUT_MS` | `20000` | Timeout waiting for search result rows (ms) |
+| `APARTMENTS_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
+| `APARTMENTS_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
+
 ## Scraper filters
 
 Hard-coded in `services/scraper/src/zillow/config.ts`:
@@ -97,3 +114,5 @@ Hard-coded in `services/scraper/src/zillow/config.ts`:
 - **Home type**: single-family homes, entire place only
 
 Craigslist uses the same city list and price/bedroom thresholds, plus text-based filtering to exclude apartment/shared-room style listings.
+
+Apartments.com uses the same city list and thresholds, ignores everything below the `expendedListingWrapper` separator, and filters out room-for-rent or non-single-family style listings.

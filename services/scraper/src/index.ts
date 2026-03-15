@@ -1,6 +1,7 @@
+import { runApartmentsScraper } from "./apartments.com/run"
 import { runCraigslistScraper } from "./craigslist/run"
 import { runZillowScraper } from "./zillow/run"
-import { sendDiscordAlert } from "./notifications/discord"
+import { sendDiscordAlert } from "./discord"
 
 const getArgValue = (flag: string): string | null => {
   const flagIndex = process.argv.findIndex((value) => value === flag)
@@ -24,7 +25,12 @@ const runSelectedScraper = async (): Promise<void> => {
     return
   }
 
-  throw new Error('Unknown source. Use "zillow" or "craigslist" with --source.')
+  if (sourceArg === "apartments" || sourceArg === "apartments.com") {
+    await runApartmentsScraper()
+    return
+  }
+
+  throw new Error('Unknown source. Use "zillow", "craigslist", or "apartments" with --source.')
 }
 
 runSelectedScraper().catch(async (error: unknown) => {

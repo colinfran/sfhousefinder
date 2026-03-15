@@ -22,7 +22,7 @@ import {
 import { isEntirePlace, isSingleFamilyHome } from "./filters"
 import { buildOutputPayload } from "./io"
 import { persistToMongo } from "./mongo"
-import { sendDiscordAlert } from "../notifications/discord"
+import { sendDiscordAlert } from "../discord"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
 

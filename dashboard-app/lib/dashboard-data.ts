@@ -7,7 +7,7 @@ import { getMongoDb, isMongoConfigured } from "@/lib/mongodb"
 export type DashboardFilters = {
   city: string
   rooms: "all" | "2" | "3plus"
-  source: "all" | "zillow" | "craigslist"
+  source: "all" | "zillow" | "craigslist" | "apartments.com"
 }
 
 type ListingDocument = {
@@ -16,6 +16,7 @@ type ListingDocument = {
   beds?: number | null
   city?: string
   foundAt?: string
+  foundAtDate?: Date | string
   googleMapsUrl?: string
   homeStatus?: string
   homeType?: string
@@ -29,6 +30,11 @@ type ListingDocument = {
   title?: string
   location?: string
   url?: string
+}
+
+type SourceCollectionConfig = {
+  collectionName: "zillow" | "craigslist" | "apartments.com"
+  enabled: boolean
 }
 
 export type DashboardListing = {
@@ -111,6 +117,8 @@ const normalizeParam = (value: string | string[] | undefined): string => {
 
 const isNonEmptyString = (value: string | undefined): value is string => Boolean(value)
 
+const APARTMENTS_SOURCE_VALUES = ["apartments", "apartments.com"] as const
+
 const toDisplayListing = (document: ListingDocument): DashboardListing => ({
   address: document.address ?? "Unknown address",
   baths: document.baths ?? null,
@@ -143,7 +151,8 @@ const buildBaseFilter = (filters: DashboardFilters): Filter<ListingDocument> => 
   }
 
   if (filters.source !== "all") {
-    mongoFilter.source = filters.source
+    mongoFilter.source =
+      filters.source === "apartments.com" ? { $in: [...APARTMENTS_SOURCE_VALUES] } : filters.source
   }
 
   if (filters.rooms === "2") {
@@ -161,16 +170,17 @@ const buildCityOptionsFilter = (filters: DashboardFilters): Filter<ListingDocume
   const mongoFilter: Filter<ListingDocument> = {}
 
   if (filters.source !== "all") {
-    mongoFilter.source = filters.source
+    mongoFilter.source =
+      filters.source === "apartments.com" ? { $in: [...APARTMENTS_SOURCE_VALUES] } : filters.source
   }
 
   return mongoFilter
 }
 
 const listingSort: Sort = {
-  isActive: -1,
-  price: 1,
+  foundAtDate: -1,
   lastSeenAtDate: -1,
+  price: 1,
 }
 
 type SummaryAggregate = {
@@ -199,21 +209,21 @@ const toDate = (value: Date | string | undefined): Date | null => {
 }
 
 const compareListings = (left: ListingDocument, right: ListingDocument): number => {
-  const leftActive = left.isActive ? 1 : 0
-  const rightActive = right.isActive ? 1 : 0
-  if (leftActive !== rightActive) {
-    return rightActive - leftActive
-  }
-
-  const leftPrice = left.price ?? Number.MAX_SAFE_INTEGER
-  const rightPrice = right.price ?? Number.MAX_SAFE_INTEGER
-  if (leftPrice !== rightPrice) {
-    return leftPrice - rightPrice
+  const leftFoundAt = toDate(left.foundAtDate ?? left.foundAt)?.getTime() ?? 0
+  const rightFoundAt = toDate(right.foundAtDate ?? right.foundAt)?.getTime() ?? 0
+  if (leftFoundAt !== rightFoundAt) {
+    return rightFoundAt - leftFoundAt
   }
 
   const leftLastSeen = toDate(left.lastSeenAtDate)?.getTime() ?? 0
   const rightLastSeen = toDate(right.lastSeenAtDate)?.getTime() ?? 0
-  return rightLastSeen - leftLastSeen
+  if (leftLastSeen !== rightLastSeen) {
+    return rightLastSeen - leftLastSeen
+  }
+
+  const leftPrice = left.price ?? Number.MAX_SAFE_INTEGER
+  const rightPrice = right.price ?? Number.MAX_SAFE_INTEGER
+  return leftPrice - rightPrice
 }
 
 const compareCheapest = (left: ListingDocument, right: ListingDocument): number => {
@@ -237,7 +247,14 @@ export const parseDashboardFilters = (
   const rooms: DashboardFilters["rooms"] =
     roomsInput === "2" || roomsInput === "3plus" ? roomsInput : "all"
   const source: DashboardFilters["source"] =
-    sourceInput === "zillow" || sourceInput === "craigslist" ? sourceInput : "all"
+    sourceInput === "zillow" ||
+    sourceInput === "craigslist" ||
+    sourceInput === "apartments.com" ||
+    sourceInput === "apartments"
+      ? sourceInput === "apartments"
+        ? "apartments.com"
+        : sourceInput
+      : "all"
 
   return {
     city: city || DEFAULT_FILTERS.city,
@@ -256,14 +273,28 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
 
   try {
     const db = await getMongoDb()
-    const zillowCollection = db.collection<ListingDocument>("zillow")
-    const craigslistCollection = db.collection<ListingDocument>("craigslist")
 
     const baseFilter = buildBaseFilter(filters)
     const displayFilter = buildBaseFilter(filters)
     const cityOptionsFilter = buildCityOptionsFilter(filters)
-    const includeZillow = filters.source === "all" || filters.source === "zillow"
-    const includeCraigslist = filters.source === "all" || filters.source === "craigslist"
+    const sourceCollections: SourceCollectionConfig[] = [
+      {
+        collectionName: "zillow",
+        enabled: filters.source === "all" || filters.source === "zillow",
+      },
+      {
+        collectionName: "craigslist",
+        enabled: filters.source === "all" || filters.source === "craigslist",
+      },
+      {
+        collectionName: "apartments.com",
+        enabled: filters.source === "all" || filters.source === "apartments.com",
+      },
+    ]
+
+    const enabledCollections = sourceCollections
+      .filter((sourceCollection) => sourceCollection.enabled)
+      .map((sourceCollection) => db.collection<ListingDocument>(sourceCollection.collectionName))
 
     const summaryPipeline = [
       {
@@ -320,68 +351,51 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
     ]
 
     const [
-      zillowCityOptions,
-      craigslistCityOptions,
-      zillowCount,
-      craigslistCount,
-      zillowListings,
-      craigslistListings,
-      zillowCheapest,
-      craigslistCheapest,
-      zillowSummary,
-      craigslistSummary,
+      cityOptionsByCollection,
+      countsByCollection,
+      listingsByCollection,
+      cheapestByCollection,
+      summariesByCollection,
     ] = await Promise.all([
-      includeZillow ? zillowCollection.distinct("city", cityOptionsFilter) : Promise.resolve([]),
-      includeCraigslist
-        ? craigslistCollection.distinct("city", cityOptionsFilter)
-        : Promise.resolve([]),
-      includeZillow ? zillowCollection.countDocuments(displayFilter) : Promise.resolve(0),
-      includeCraigslist ? craigslistCollection.countDocuments(displayFilter) : Promise.resolve(0),
-      includeZillow
-        ? zillowCollection.find(displayFilter).sort(listingSort).limit(60).toArray()
-        : Promise.resolve([]),
-      includeCraigslist
-        ? craigslistCollection.find(displayFilter).sort(listingSort).limit(60).toArray()
-        : Promise.resolve([]),
-      includeZillow
-        ? zillowCollection
+      Promise.all(
+        enabledCollections.map((collection) => collection.distinct("city", cityOptionsFilter)),
+      ),
+      Promise.all(enabledCollections.map((collection) => collection.countDocuments(displayFilter))),
+      Promise.all(
+        enabledCollections.map((collection) =>
+          collection.find(displayFilter).sort(listingSort).limit(60).toArray(),
+        ),
+      ),
+      Promise.all(
+        enabledCollections.map((collection) =>
+          collection
             .find({ ...displayFilter, price: { $ne: null } })
             .sort({ price: 1, lastSeenAtDate: -1 })
             .limit(3)
-            .toArray()
-        : Promise.resolve([]),
-      includeCraigslist
-        ? craigslistCollection
-            .find({ ...displayFilter, price: { $ne: null } })
-            .sort({ price: 1, lastSeenAtDate: -1 })
-            .limit(3)
-            .toArray()
-        : Promise.resolve([]),
-      includeZillow
-        ? zillowCollection.aggregate<SummaryAggregate>(summaryPipeline).next()
-        : Promise.resolve(null),
-      includeCraigslist
-        ? craigslistCollection.aggregate<SummaryAggregate>(summaryPipeline).next()
-        : Promise.resolve(null),
+            .toArray(),
+        ),
+      ),
+      Promise.all(
+        enabledCollections.map((collection) =>
+          collection.aggregate<SummaryAggregate>(summaryPipeline).next(),
+        ),
+      ),
     ])
 
-    const listings = [...zillowListings, ...craigslistListings].sort(compareListings).slice(0, 60)
-    const cheapestListings = [...zillowCheapest, ...craigslistCheapest]
-      .sort(compareCheapest)
-      .slice(0, 3)
+    const listings = listingsByCollection.flat().sort(compareListings).slice(0, 60)
+    const cheapestListings = cheapestByCollection.flat().sort(compareCheapest).slice(0, 3)
 
     const cityOptions = [
       ...new Set([
         ...SUPPORTED_CITY_OPTIONS,
-        ...zillowCityOptions,
-        ...craigslistCityOptions,
+        ...cityOptionsByCollection.flat(),
         ...(filters.city !== "all" ? [filters.city] : []),
       ]),
     ]
-    const filteredCount = zillowCount + craigslistCount
+    const filteredCount = countsByCollection.reduce((total, count) => total + count, 0)
 
-    const summaries = [zillowSummary, craigslistSummary].filter(
-      (summary): summary is SummaryAggregate => Boolean(summary),
+    const summaries = summariesByCollection.filter((summary): summary is SummaryAggregate =>
+      Boolean(summary),
     )
 
     const activeListings = summaries.reduce((total, summary) => total + summary.activeListings, 0)

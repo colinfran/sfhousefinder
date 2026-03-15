@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s | sfhousefinder",
   },
   description:
-    "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
+    "Track active and inactive Zillow, Craigslist, and Apartments.com rental listings across Bay Area cities.",
   icons: {
     icon: [
       {
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "sfhousefinder | Rental Dashboard",
     description:
-      "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
+      "Track active and inactive Zillow, Craigslist, and Apartments.com rental listings across Bay Area cities.",
     type: "website",
     images: [
       {
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "sfhousefinder | Rental Dashboard",
     description:
-      "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
+      "Track active and inactive Zillow, Craigslist, and Apartments.com rental listings across Bay Area cities.",
     images: ["/og-image.jpg"],
   },
 }

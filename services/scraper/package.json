@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "start:zillow:all-cities": "tsx src/index.ts --source zillow --all-cities",
     "start:craigslist:all-cities": "tsx src/index.ts --source craigslist --all-cities",
+    "start:apartments.com:all-cities": "tsx src/index.ts --source apartments --all-cities",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -26,6 +26,7 @@ const Filters = ({ cityOptions, filters }: FiltersProps): JSX.Element => {
     { label: "All sources", value: "all" },
     { label: "Zillow", value: "zillow" },
     { label: "Craigslist", value: "craigslist" },
+    { label: "Apartments.com", value: "apartments.com" },
   ] as const
 
   const roomOptions = [

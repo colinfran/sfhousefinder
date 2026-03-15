@@ -39,6 +39,24 @@ export const formatHomeType = (value: string): string =>
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ")
 
+export const formatSource = (value: string): string => {
+  const normalizedValue = value.trim().toLowerCase()
+
+  if (normalizedValue === "apartments" || normalizedValue === "apartments.com") {
+    return "Apartments.com"
+  }
+
+  if (normalizedValue === "zillow") {
+    return "Zillow"
+  }
+
+  if (normalizedValue === "craigslist") {
+    return "Craigslist"
+  }
+
+  return value
+}
+
 export const buildQueryString = (
   filters: DashboardFilters,
   overrides: Partial<DashboardFilters>,

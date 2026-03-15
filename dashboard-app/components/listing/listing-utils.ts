@@ -7,8 +7,13 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 })
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "short",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Los_Angeles",
+  timeZoneName: "short",
 })
 
 export const formatCurrency = (value: number | null): string => {

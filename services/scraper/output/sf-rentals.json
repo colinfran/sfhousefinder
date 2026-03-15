@@ -1,0 +1,170 @@
+{
+  "scrapedAt": "2026-03-15T07:37:36.775Z",
+  "filters": {
+    "city": "San Francisco, CA",
+    "minPrice": 3000,
+    "maxPrice": 4500,
+    "minBeds": 2,
+    "homeType": "single_family_house",
+    "spaceType": "entire_place"
+  },
+  "count": 13,
+  "listings": [
+    {
+      "id": "15174995",
+      "address": "(undisclosed Address), San Francisco, CA 94112",
+      "price": 3500,
+      "beds": 2,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/San-Francisco-CA-94112/15174995_zpid/",
+      "googleMapsUrl": "",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/36f0beaa28f2c1ae7f19832e28bcceda-p_e.jpg"
+    },
+    {
+      "id": "15157506",
+      "address": "55 Apollo St, San Francisco, CA 94124",
+      "price": 4288,
+      "beds": 3,
+      "baths": 1,
+      "url": "https://www.zillow.com/homedetails/55-Apollo-St-San-Francisco-CA-94124/15157506_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=55%20Apollo%20St%2C%20San%20Francisco%2C%20CA%2094124",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/18fd80daf4b2e15743858fa0eeb1dc40-p_e.jpg"
+    },
+    {
+      "id": "15096088",
+      "address": "662 40th Ave, San Francisco, CA 94121",
+      "price": 4250,
+      "beds": 2,
+      "baths": 1,
+      "url": "https://www.zillow.com/homedetails/662-40th-Ave-San-Francisco-CA-94121/15096088_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=662%2040th%20Ave%2C%20San%20Francisco%2C%20CA%2094121",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/2f4a2ff8c2ba1a957ed4cd51a8b6cb4f-p_e.jpg"
+    },
+    {
+      "id": "15158011",
+      "address": "1932 Quint St, San Francisco, CA 94124",
+      "price": 4400,
+      "beds": 3,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/1932-Quint-St-San-Francisco-CA-94124/15158011_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=1932%20Quint%20St%2C%20San%20Francisco%2C%20CA%2094124",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/e555302fb983b3918657d7b556cb41b1-p_e.jpg"
+    },
+    {
+      "id": "15185616",
+      "address": "175 Brompton Ave, San Francisco, CA 94131",
+      "price": 3600,
+      "beds": 2,
+      "baths": 1,
+      "url": "https://www.zillow.com/homedetails/175-Brompton-Ave-San-Francisco-CA-94131/15185616_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=175%20Brompton%20Ave%2C%20San%20Francisco%2C%20CA%2094131",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/9bd85a56734efda1fbd9cf5c5f6fec27-p_e.jpg"
+    },
+    {
+      "id": "15186356",
+      "address": "241 Tingley St, San Francisco, CA 94112",
+      "price": 3100,
+      "beds": 4,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/241-Tingley-St-San-Francisco-CA-94112/15186356_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=241%20Tingley%20St%2C%20San%20Francisco%2C%20CA%2094112",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/b3b317bc271f96f0739307790ba84b57-p_e.jpg"
+    },
+    {
+      "id": "69819406",
+      "address": "163 Rae Ave, San Francisco, CA 94112",
+      "price": 4399,
+      "beds": 3,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/163-Rae-Ave-San-Francisco-CA-94112/69819406_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=163%20Rae%20Ave%2C%20San%20Francisco%2C%20CA%2094112",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/a8689ef2bf9fb4626740578d57031096-p_e.jpg"
+    },
+    {
+      "id": "15168551",
+      "address": "268 Somerset St, San Francisco, CA 94134",
+      "price": 4000,
+      "beds": 3,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/268-Somerset-St-San-Francisco-CA-94134/15168551_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=268%20Somerset%20St%2C%20San%20Francisco%2C%20CA%2094134",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/864fa4635bb5fabd67eeaf076ea32597-p_e.jpg"
+    },
+    {
+      "id": "53734669",
+      "address": "(undisclosed Address), San Francisco, CA 94124",
+      "price": 4400,
+      "beds": 3,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/San-Francisco-CA-94124/53734669_zpid/",
+      "googleMapsUrl": "",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/16247f5f0bf661a422d02efa01b778b3-p_e.jpg"
+    },
+    {
+      "id": "15179533",
+      "address": "517 Brunswick St, San Francisco, CA 94112",
+      "price": 4500,
+      "beds": 3,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/517-Brunswick-St-San-Francisco-CA-94112/15179533_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=517%20Brunswick%20St%2C%20San%20Francisco%2C%20CA%2094112",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/9cb42b66bf607a18089aba6776947743-p_e.jpg"
+    },
+    {
+      "id": "2062492508",
+      "address": "2425 23rd Ave, San Francisco, CA 94116",
+      "price": 4500,
+      "beds": 3,
+      "baths": 4,
+      "url": "https://www.zillow.com/homedetails/2425-23rd-Ave-San-Francisco-CA-94116/2062492508_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=2425%2023rd%20Ave%2C%20San%20Francisco%2C%20CA%2094116",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/c4eb5ca405d7b88b92c9d5beca6fef81-p_e.jpg"
+    },
+    {
+      "id": "15153564",
+      "address": "1354 Palou Ave, San Francisco, CA 94124",
+      "price": 3700,
+      "beds": 2,
+      "baths": 2,
+      "url": "https://www.zillow.com/homedetails/1354-Palou-Ave-San-Francisco-CA-94124/15153564_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=1354%20Palou%20Ave%2C%20San%20Francisco%2C%20CA%2094124",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/1ffdd37107d66d9fd31db7a2f512ca75-p_e.jpg"
+    },
+    {
+      "id": "15158464",
+      "address": "178 Scotia Ave, San Francisco, CA 94124",
+      "price": 4000,
+      "beds": 3,
+      "baths": 1,
+      "url": "https://www.zillow.com/homedetails/178-Scotia-Ave-San-Francisco-CA-94124/15158464_zpid/",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=178%20Scotia%20Ave%2C%20San%20Francisco%2C%20CA%2094124",
+      "homeType": "SINGLE_FAMILY",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://photos.zillowstatic.com/fp/0880742ed1dad9422a528a816ba24d13-p_e.jpg"
+    }
+  ]
+}

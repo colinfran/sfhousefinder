@@ -8,3 +8,4 @@ dashboard-app/.next
 dashboard-app/out
 
 services/scraper/dist
+dashboard-app/next-env.d.ts

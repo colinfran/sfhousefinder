@@ -17,11 +17,11 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
   return (
     <div
       className={cn(
-        "group relative flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-muted/30 sm:grid sm:grid-cols-12 sm:items-center sm:gap-4",
+        "group relative flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4",
         !listing.isActive && "opacity-60",
       )}
     >
-      <div className="col-span-5 flex min-w-0 gap-3 overflow-hidden pr-12 sm:pr-0">
+      <div className="col-span-5 flex min-w-0 gap-3 overflow-hidden">
         <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
           <ListingImage listing={listing} />
         </div>
@@ -58,7 +58,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
         </div>
       </div>
 
-      <div className="col-span-2 flex flex-wrap items-center gap-3 sm:flex-col sm:items-start sm:gap-1">
+      <div className="col-span-2 flex flex-wrap items-center gap-3 lg:flex-col lg:items-start lg:gap-1">
         <span className="text-sm font-medium text-foreground">{formatCurrency(listing.price)}</span>
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
@@ -72,17 +72,50 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
         </div>
       </div>
 
-      <div className="col-span-1">
+      <div className="flex items-end justify-between gap-3 lg:hidden">
+        <div className="flex min-w-0 items-center gap-3">
+          <Badge className="capitalize" variant="outline">
+            {listing.source}
+          </Badge>
+          <span className="truncate text-xs text-muted-foreground">
+            {formatTimestamp(listing.lastSeenAt)}
+          </span>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {listing.googleMapsUrl ? (
+            <a
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+              href={listing.googleMapsUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Map
+            </a>
+          ) : null}
+          <a
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}
+            href={listing.url}
+            rel="noreferrer"
+            target="_blank"
+          >
+            View
+            <ArrowUpRight className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+
+      <div className="col-span-1 hidden lg:block">
         <Badge className="capitalize" variant="outline">
           {listing.source}
         </Badge>
       </div>
 
-      <div className="col-span-2">
+      <div className="col-span-2 hidden lg:block">
         <span className="text-xs text-muted-foreground">{formatTimestamp(listing.lastSeenAt)}</span>
       </div>
 
-      <div className="col-span-2 flex items-center justify-end gap-2">
+      <div className="col-span-2 hidden items-center gap-2 lg:flex lg:justify-end">
         {listing.googleMapsUrl ? (
           <a
             className={buttonVariants({ size: "sm", variant: "outline" })}

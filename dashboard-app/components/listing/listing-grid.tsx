@@ -11,7 +11,7 @@ type ListingGridProps = {
 const ListingGrid = ({ listings }: ListingGridProps): JSX.Element => {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
-      <div className="hidden border-b border-border bg-muted/50 px-4 py-3 sm:grid sm:grid-cols-12 sm:gap-4">
+      <div className="hidden border-b border-border bg-muted/50 px-4 py-3 lg:grid lg:grid-cols-12 lg:gap-4">
         <div className="col-span-5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Listing
         </div>

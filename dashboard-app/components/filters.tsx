@@ -13,32 +13,70 @@ type FiltersProps = {
 
 const Filters = ({ cityOptions, filters }: FiltersProps): JSX.Element => {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link
-        className={cn(
-          "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-          filters.city === "all"
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground hover:text-foreground",
-        )}
-        href={buildQueryString(filters, { city: "all" })}
-      >
-        All cities
-      </Link>
-      {cityOptions.map((city) => (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <Link
           className={cn(
             "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-            filters.city === city
+            filters.source === "all"
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:text-foreground",
           )}
-          href={buildQueryString(filters, { city })}
-          key={city}
+          href={buildQueryString(filters, { source: "all" })}
         >
-          {city}
+          All sources
         </Link>
-      ))}
+        <Link
+          className={cn(
+            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors",
+            filters.source === "zillow"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+          href={buildQueryString(filters, { source: "zillow" })}
+        >
+          Zillow
+        </Link>
+        <Link
+          className={cn(
+            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium capitalize transition-colors",
+            filters.source === "craigslist"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+          href={buildQueryString(filters, { source: "craigslist" })}
+        >
+          Craigslist
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          className={cn(
+            "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+            filters.city === "all"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground",
+          )}
+          href={buildQueryString(filters, { city: "all" })}
+        >
+          All cities
+        </Link>
+        {cityOptions.map((city) => (
+          <Link
+            className={cn(
+              "cursor-pointer rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+              filters.city === city
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground",
+            )}
+            href={buildQueryString(filters, { city })}
+            key={city}
+          >
+            {city}
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

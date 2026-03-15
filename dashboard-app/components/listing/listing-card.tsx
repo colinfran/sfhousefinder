@@ -15,6 +15,10 @@ type ListingCardProps = {
 }
 
 const ListingCard = ({ listing }: ListingCardProps): JSX.Element => {
+  const isCraigslist = listing.source.toLowerCase() === "craigslist"
+  const primaryLabel = isCraigslist ? (listing.title ?? listing.address) : listing.address
+  const locationLabel = isCraigslist ? (listing.location ?? listing.address) : listing.city
+
   return (
     <Card
       className={cn(
@@ -52,12 +56,12 @@ const ListingCard = ({ listing }: ListingCardProps): JSX.Element => {
       <CardContent className="space-y-5 p-5 pt-5">
         <div className="space-y-2">
           <h2 className="line-clamp-2 font-[family-name:var(--font-display)] text-2xl leading-tight">
-            {listing.address}
+            {primaryLabel}
           </h2>
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="size-4" />
-              {listing.city}
+              {locationLabel}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <BedDouble className="size-4" />

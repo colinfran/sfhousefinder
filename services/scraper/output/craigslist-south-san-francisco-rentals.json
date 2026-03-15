@@ -1,0 +1,13 @@
+{
+  "scrapedAt": "2026-03-15T16:10:02.465Z",
+  "filters": {
+    "city": "South San Francisco, CA",
+    "minPrice": 3000,
+    "maxPrice": 4500,
+    "minBeds": 2,
+    "homeType": "single_family_house",
+    "spaceType": "entire_place"
+  },
+  "count": 0,
+  "listings": []
+}

@@ -49,6 +49,10 @@ export const buildQueryString = (
     params.set("city", nextFilters.city)
   }
 
+  if (nextFilters.source !== "all") {
+    params.set("source", nextFilters.source)
+  }
+
   const queryString = params.toString()
   return queryString ? `/?${queryString}` : "/"
 }

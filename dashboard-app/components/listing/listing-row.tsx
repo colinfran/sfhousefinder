@@ -14,6 +14,10 @@ type ListingRowProps = {
 }
 
 const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
+  const isCraigslist = listing.source.toLowerCase() === "craigslist"
+  const primaryLabel = isCraigslist ? (listing.title ?? listing.address) : listing.address
+  const locationLabel = isCraigslist ? (listing.location ?? listing.address) : listing.city
+
   return (
     <div
       className={cn(
@@ -32,14 +36,14 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
             href={listing.url}
             rel="noopener noreferrer"
             target="_blank"
-            title={listing.address}
+            title={primaryLabel}
           >
-            {listing.address}
+            {primaryLabel}
           </a>
 
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
-            {listing.city}
+            {locationLabel}
           </span>
 
           <div className="flex flex-wrap items-center gap-2 pt-1">

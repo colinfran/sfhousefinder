@@ -1,0 +1,42 @@
+{
+  "scrapedAt": "2026-03-15T16:13:24.658Z",
+  "filters": {
+    "city": "San Mateo, CA",
+    "minPrice": 3000,
+    "maxPrice": 4500,
+    "minBeds": 2,
+    "homeType": "single_family_house",
+    "spaceType": "entire_place"
+  },
+  "count": 2,
+  "listings": [
+    {
+      "id": "7917740335",
+      "title": "Cozy and Charming!!623 S. El Dorado Street, San Mateo",
+      "location": "san mateo",
+      "address": "san mateo",
+      "price": 4200,
+      "beds": 2,
+      "baths": null,
+      "url": "https://sfbay.craigslist.org/pen/apa/d/san-mateo-cozy-and-charming623-el/7917740335.html",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=san%20mateo",
+      "homeType": "single_family_house",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://images.craigslist.org/d/7917740335/00B0B_dhGRs0htSZW_0ne0hq_600x450.jpg"
+    },
+    {
+      "id": "7918730565",
+      "title": "Detached Single Family Home w 2-Car Garage Quiet Neighborhood",
+      "location": "san mateo",
+      "address": "san mateo",
+      "price": 4100,
+      "beds": 2,
+      "baths": null,
+      "url": "https://sfbay.craigslist.org/pen/apa/d/san-mateo-detached-single-family-home-2/7918730565.html",
+      "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=san%20mateo",
+      "homeType": "single_family_house",
+      "homeStatus": "FOR_RENT",
+      "primaryImageUrl": "https://images.craigslist.org/d/7918730565/00l0l_cY4sFCLyPnb_1320MM_600x450.jpg"
+    }
+  ]
+}

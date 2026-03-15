@@ -3,7 +3,7 @@
 Monorepo with two TypeScript apps:
 
 - `dashboard-app`: Next.js 16 app (App Router) — displays rental listings from MongoDB
-- `services/scraper`: Node.js Puppeteer scraper — scrapes Zillow and persists results to MongoDB
+- `services/scraper`: Node.js Puppeteer scraper — scrapes Zillow and Craigslist, persists results to MongoDB
 
 ## Requirements
 
@@ -40,21 +40,27 @@ Monorepo with two TypeScript apps:
   npm run dev:dashboard
   ```
 
-- Scraper:
+- Scraper — Zillow (all cities):
 
   ```bash
-  npm run dev:scraper
+  npm run dev:scraper:zillow
   ```
 
-   (Runs all configured cities by default using isolated per-city sessions + cooldown.)
+- Scraper — Craigslist (all cities):
 
-   Single city:
+  ```bash
+  npm run dev:scraper:craigslist
+  ```
 
-   ```bash
-   npm run dev:scraper -- --city daly-city
-   ```
+  To run a single city directly from the scraper package:
 
-  Results are written directly to the `zillow` collection in MongoDB. Active/inactive listing state is maintained automatically — listings no longer visible on Zillow are marked `isActive: false`.
+  ```bash
+  npm --workspace services/scraper run dev:craigslist:all-cities
+  # or for zillow:
+  npm --workspace services/scraper run dev:zillow:all-cities
+  ```
+
+  Results are written to separate MongoDB collections (`zillow_listings` and `craigslist_listings`) and also exported as JSON to `services/scraper/output/`.
 
 ## Scraper tuning
 
@@ -71,6 +77,15 @@ The scraper uses `puppeteer-extra` with the stealth plugin and randomised browse
 | `ZILLOW_CITY_COOLDOWN_MIN_MS` | `60000` | Min delay between cities in `--all-cities` mode (ms) |
 | `ZILLOW_CITY_COOLDOWN_MAX_MS` | `180000` | Max delay between cities in `--all-cities` mode (ms) |
 
+Craigslist scraper timing can be tuned with:
+
+| Variable | Default | Description |
+|---|---|---|
+| `CRAIGSLIST_NAV_TIMEOUT_MS` | `60000` | Page navigation timeout (ms) |
+| `CRAIGSLIST_LISTINGS_TIMEOUT_MS` | `15000` | Timeout waiting for search result rows (ms) |
+| `CRAIGSLIST_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
+| `CRAIGSLIST_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
+
 ## Scraper filters
 
 Hard-coded in `services/scraper/src/zillow/config.ts`:
@@ -79,3 +94,5 @@ Hard-coded in `services/scraper/src/zillow/config.ts`:
 - **Price range**: $3,000 – $4,500/mo
 - **Min beds**: 2
 - **Home type**: single-family homes, entire place only
+
+Craigslist uses the same city list and price/bedroom thresholds, plus text-based filtering to exclude apartment/shared-room style listings.

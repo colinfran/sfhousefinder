@@ -76,6 +76,14 @@ const DEFAULT_FILTERS: DashboardFilters = {
   source: "all",
 }
 
+const SUPPORTED_CITY_OPTIONS = [
+  "San Francisco, CA",
+  "Daly City, CA",
+  "San Mateo, CA",
+  "South San Francisco, CA",
+  "Pacifica, CA",
+]
+
 const emptyData: DashboardData = {
   cheapestListings: [],
   cityOptions: [],
@@ -131,6 +139,16 @@ const buildBaseFilter = (filters: DashboardFilters): Filter<ListingDocument> => 
   if (filters.city !== "all") {
     mongoFilter.city = filters.city
   }
+
+  if (filters.source !== "all") {
+    mongoFilter.source = filters.source
+  }
+
+  return mongoFilter
+}
+
+const buildCityOptionsFilter = (filters: DashboardFilters): Filter<ListingDocument> => {
+  const mongoFilter: Filter<ListingDocument> = {}
 
   if (filters.source !== "all") {
     mongoFilter.source = filters.source
@@ -229,6 +247,7 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
 
     const baseFilter = buildBaseFilter(filters)
     const displayFilter = buildBaseFilter(filters)
+    const cityOptionsFilter = buildCityOptionsFilter(filters)
     const includeZillow = filters.source === "all" || filters.source === "zillow"
     const includeCraigslist = filters.source === "all" || filters.source === "craigslist"
 
@@ -298,9 +317,9 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
       zillowSummary,
       craigslistSummary,
     ] = await Promise.all([
-      includeZillow ? zillowCollection.distinct("city", displayFilter) : Promise.resolve([]),
+      includeZillow ? zillowCollection.distinct("city", cityOptionsFilter) : Promise.resolve([]),
       includeCraigslist
-        ? craigslistCollection.distinct("city", displayFilter)
+        ? craigslistCollection.distinct("city", cityOptionsFilter)
         : Promise.resolve([]),
       includeZillow ? zillowCollection.countDocuments(displayFilter) : Promise.resolve(0),
       includeCraigslist ? craigslistCollection.countDocuments(displayFilter) : Promise.resolve(0),
@@ -337,7 +356,14 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
       .sort(compareCheapest)
       .slice(0, 3)
 
-    const cityOptions = [...new Set([...zillowCityOptions, ...craigslistCityOptions])]
+    const cityOptions = [
+      ...new Set([
+        ...SUPPORTED_CITY_OPTIONS,
+        ...zillowCityOptions,
+        ...craigslistCityOptions,
+        ...(filters.city !== "all" ? [filters.city] : []),
+      ]),
+    ]
     const filteredCount = zillowCount + craigslistCount
 
     const summaries = [zillowSummary, craigslistSummary].filter(

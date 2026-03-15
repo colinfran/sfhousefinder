@@ -476,7 +476,9 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
         }
 
         if (!matchesTargetCity(raw, cityTarget)) {
-          console.log(`  Skipping city mismatch listing: "${raw.title}" hood="${raw.hoodText}" url="${raw.url}"`)
+          console.log(
+            `  Skipping city mismatch listing: "${raw.title}" hood="${raw.hoodText}" url="${raw.url}"`,
+          )
           return false
         }
 

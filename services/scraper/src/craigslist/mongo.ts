@@ -96,7 +96,9 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
     })
 
     if (!operations.length) {
-      console.log("No current Craigslist listings found; marked prior active city listings inactive.")
+      console.log(
+        "No current Craigslist listings found; marked prior active city listings inactive.",
+      )
     }
 
     console.log(

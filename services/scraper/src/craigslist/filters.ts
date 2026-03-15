@@ -47,7 +47,11 @@ export const isInAllowedNeighborhood = (
 }
 
 const normalizeLocationText = (value: string): string => {
-  return value.toLowerCase().replace(/[-_/]+/g, " ").replace(/\s+/g, " ").trim()
+  return value
+    .toLowerCase()
+    .replace(/[-_/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
 }
 
 export const matchesTargetCity = (raw: CraigslistRawListing, cityTarget: CityTarget): boolean => {

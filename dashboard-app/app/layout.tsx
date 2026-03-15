@@ -19,12 +19,35 @@ const display = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "Housefinder Dashboard",
-  description: "Server-rendered rental listings backed by MongoDB",
+  title: {
+    default: "Housefinder | Rental Dashboard",
+    template: "%s | Housefinder",
+  },
+  description:
+    "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
     apple: "/icon.svg",
+  },
+  openGraph: {
+    title: "Housefinder | Rental Dashboard",
+    description:
+      "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.jpg",
+        alt: "Housefinder rental dashboard preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Housefinder | Rental Dashboard",
+    description:
+      "Track active and inactive Zillow and Craigslist rental listings across Bay Area cities.",
+    images: ["/og-image.jpg"],
   },
 }
 

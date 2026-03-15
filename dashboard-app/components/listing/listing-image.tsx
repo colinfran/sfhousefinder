@@ -1,7 +1,6 @@
 import Image from "next/image"
 import type { JSX } from "react"
 
-import placeholderImage from "@/app/placeholder.svg"
 import type { DashboardListing } from "@/lib/dashboard-data"
 
 type ListingImageProps = {
@@ -9,7 +8,7 @@ type ListingImageProps = {
 }
 
 const ListingImage = ({ listing }: ListingImageProps): JSX.Element => {
-  const imageSrc = listing.primaryImageUrl?.trim() ? listing.primaryImageUrl : placeholderImage
+  const imageSrc = listing.primaryImageUrl?.trim() ? listing.primaryImageUrl : "/placeholder.svg"
 
   return (
     <div className="relative aspect-[4/3] overflow-hidden">

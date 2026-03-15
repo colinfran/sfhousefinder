@@ -1,0 +1,40 @@
+{
+  "name": "housefinder",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "dashboard-app",
+    "services/scraper",
+    "packages/db"
+  ],
+  "scripts": {
+    "dev:dashboard": "npm --workspace dashboard-app run dev",
+    "dev:scraper": "npm --workspace services/scraper run dev",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@next/eslint-plugin-next": "^16.0.0",
+    "@types/node": "^22.13.11",
+    "@types/pg": "^8.11.11",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.30.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
+  }
+}

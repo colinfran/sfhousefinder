@@ -1,10 +1,21 @@
 import "server-only"
 
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+import nextEnv from "@next/env"
 import { Db, MongoClient } from "mongodb"
 
 declare global {
   var mongoClientPromise: Promise<MongoClient> | undefined
 }
+
+const currentFilePath = fileURLToPath(import.meta.url)
+const currentDirPath = path.dirname(currentFilePath)
+const workspaceRootPath = path.resolve(currentDirPath, "../..")
+const { loadEnvConfig } = nextEnv
+
+loadEnvConfig(workspaceRootPath, globalThis.process.env.NODE_ENV !== "production")
 
 const getMongoUri = (): string | null => {
   const mongoUri = process.env.MONGODB_URI ?? null

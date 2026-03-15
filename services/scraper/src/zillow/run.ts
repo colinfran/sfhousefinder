@@ -3,6 +3,9 @@ import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config as loadEnv } from "dotenv"
 import type { Page } from "puppeteer"
 import {
+  CITY_COOLDOWN_MAX_MS,
+  CITY_COOLDOWN_MIN_MS,
+  CITY_TARGETS,
   MAX_PRICE,
   MAX_SCRAPE_ATTEMPTS,
   MIN_BEDS,
@@ -14,7 +17,7 @@ import {
   PROXY_SERVER,
   RETRY_BASE_DELAY_MS,
   ROOT_ENV_PATH,
-  SAN_FRANCISCO_RENTALS_URL,
+  type CityTarget,
 } from "./config"
 import { isEntirePlace, isSingleFamilyHome } from "./filters"
 import { buildOutputPayload } from "./io"
@@ -51,6 +54,25 @@ const randomInRange = (minimum: number, maximum: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
+const getArgValue = (flag: string): string | null => {
+  const flagIndex = process.argv.findIndex((value) => value === flag)
+  if (flagIndex === -1) {
+    return null
+  }
+
+  return process.argv[flagIndex + 1] ?? null
+}
+
+const resolveCityTarget = (input: string): CityTarget | null => {
+  const normalizedInput = input.trim().toLowerCase()
+
+  return (
+    CITY_TARGETS.find((city) => city.key === normalizedInput) ??
+    CITY_TARGETS.find((city) => city.label.toLowerCase() === normalizedInput) ??
+    null
+  )
+}
+
 const configurePage = async (page: Page): Promise<void> => {
   await page.setViewport({
     width: randomInRange(1366, 1728),
@@ -80,19 +102,22 @@ const isBotProtectionPage = async (page: Page): Promise<boolean> => {
   return BOT_PROTECTION_PATTERNS.some((pattern) => pattern.test(pageText))
 }
 
-const loadListResultsWithRetries = async (page: Page): Promise<ZillowListResult[]> => {
+const loadListResultsWithRetries = async (
+  page: Page,
+  cityTarget: CityTarget,
+): Promise<ZillowListResult[]> => {
   for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
       const backoff = RETRY_BASE_DELAY_MS * attempt + randomInRange(1000, 4000)
       console.log(
-        `Retrying Zillow load in ${backoff}ms (attempt ${attempt}/${MAX_SCRAPE_ATTEMPTS})...`,
+        `Retrying ${cityTarget.label} in ${backoff}ms (attempt ${attempt}/${MAX_SCRAPE_ATTEMPTS})...`,
       )
       await sleep(backoff)
     }
 
     await sleep(randomInRange(PRE_NAVIGATION_MIN_DELAY_MS, PRE_NAVIGATION_MAX_DELAY_MS))
 
-    await page.goto(SAN_FRANCISCO_RENTALS_URL, {
+    await page.goto(cityTarget.url, {
       waitUntil: "domcontentloaded",
       timeout: NAVIGATION_TIMEOUT_MS,
     })
@@ -115,13 +140,13 @@ const loadListResultsWithRetries = async (page: Page): Promise<ZillowListResult[
       break
     }
 
-    console.log("Zillow bot protection detected for this attempt.")
+    console.log(`Zillow bot protection detected for ${cityTarget.label} on this attempt.`)
   }
 
   return []
 }
 
-export const runZillowScraper = async (): Promise<void> => {
+const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
 
   if (PROXY_SERVER) {
@@ -138,15 +163,15 @@ export const runZillowScraper = async (): Promise<void> => {
 
     await configurePage(page)
 
-    console.log(`Opening Zillow rentals search: ${SAN_FRANCISCO_RENTALS_URL}`)
+    console.log(`Opening Zillow rentals search: ${cityTarget.url}`)
 
-    const listResults = await loadListResultsWithRetries(page)
+    const listResults = await loadListResultsWithRetries(page, cityTarget)
 
     if (!listResults.length) {
       console.log(
-        "No listing payload found after retries. Zillow likely challenged this session or changed page structure.",
+        `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
       )
-      return
+      return 0
     }
 
     const rentals = listResults
@@ -177,9 +202,9 @@ export const runZillowScraper = async (): Promise<void> => {
 
     const deduped = Array.from(new Map(rentals.map((listing) => [listing.id, listing])).values())
 
-    console.log(`Found ${deduped.length} San Francisco rentals matching filters.`)
+    console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
 
-    const outputPayload = buildOutputPayload(deduped)
+    const outputPayload = buildOutputPayload(deduped, cityTarget.label)
 
     await persistToMongo(outputPayload)
 
@@ -196,7 +221,48 @@ export const runZillowScraper = async (): Promise<void> => {
         primaryImageUrl: listing.primaryImageUrl,
       })),
     )
+
+    return deduped.length
   } finally {
     await browser.close()
   }
+}
+
+export const runZillowScraper = async (): Promise<void> => {
+  const cityArg = getArgValue("--city")
+  const shouldRunAllCities = process.argv.includes("--all-cities")
+
+  if (cityArg) {
+    const targetCity = resolveCityTarget(cityArg)
+    if (!targetCity) {
+      const supported = CITY_TARGETS.map((city) => city.key).join(", ")
+      throw new Error(`Unknown city "${cityArg}". Use one of: ${supported}`)
+    }
+
+    await runCityScrape(targetCity)
+    return
+  }
+
+  if (shouldRunAllCities) {
+    const summary: Array<{ city: string; listings: number }> = []
+
+    for (let index = 0; index < CITY_TARGETS.length; index += 1) {
+      const cityTarget = CITY_TARGETS[index]
+      console.log(`Starting scrape for ${cityTarget.label} (${cityTarget.key})...`)
+
+      const count = await runCityScrape(cityTarget)
+      summary.push({ city: cityTarget.label, listings: count })
+
+      if (index < CITY_TARGETS.length - 1) {
+        const cooldown = randomInRange(CITY_COOLDOWN_MIN_MS, CITY_COOLDOWN_MAX_MS)
+        console.log(`Cooldown before next city: ${cooldown}ms`)
+        await sleep(cooldown)
+      }
+    }
+
+    console.table(summary)
+    return
+  }
+
+  await runCityScrape(CITY_TARGETS[0])
 }

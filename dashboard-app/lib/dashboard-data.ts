@@ -149,7 +149,7 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
   if (!isMongoConfigured()) {
     return {
       data: emptyData,
-      error: "MongoDB is not configured for the dashboard runtime.",
+      error: "MONGODB_URI is not configured for the dashboard runtime.",
     }
   }
 

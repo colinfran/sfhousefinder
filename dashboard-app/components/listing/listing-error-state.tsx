@@ -14,8 +14,7 @@ const ListingErrorState = ({ error }: ListingErrorStateProps): JSX.Element => {
           <CardTitle>MongoDB connection unavailable</CardTitle>
           <CardDescription className="max-w-2xl text-base leading-7 text-muted-foreground">
             The listings page reads rental data directly on the server. Configure{" "}
-            <span className="font-semibold text-foreground">MONGODB_URI</span> or{" "}
-            <span className="font-semibold text-foreground">DATABASE_URL</span> with a MongoDB
+            <span className="font-semibold text-foreground">MONGODB_URI</span> with a MongoDB
             connection string, then reload the page.
           </CardDescription>
         </CardHeader>

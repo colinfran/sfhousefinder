@@ -21,6 +21,11 @@ const display = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Housefinder Dashboard",
   description: "Server-rendered rental listings backed by MongoDB",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 }
 
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>): JSX.Element => {

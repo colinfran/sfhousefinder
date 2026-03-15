@@ -67,34 +67,37 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
       },
     }))
 
-    if (!operations.length) {
-      console.log("No listings to persist to MongoDB.")
-      return
-    }
-
-    const result = await collection.bulkWrite(operations, { ordered: false })
+    const result = operations.length
+      ? await collection.bulkWrite(operations, { ordered: false })
+      : { matchedCount: 0, modifiedCount: 0, upsertedCount: 0 }
 
     const currentListingIds = payload.listings.map((listing) => listing.id)
 
-    const deactivationResult =
-      currentListingIds.length > 0
-        ? await collection.updateMany(
-            {
-              source: "craigslist",
-              city: payload.filters.city,
-              isActive: true,
-              listingId: { $nin: currentListingIds },
-            },
-            {
-              $set: {
-                isActive: false,
-                offMarketAt: payload.scrapedAt,
-                offMarketAtDate: foundAtDate,
-                updatedAt: now,
-              },
-            },
-          )
-        : { modifiedCount: 0 }
+    const deactivationFilter = currentListingIds.length
+      ? {
+          source: "craigslist",
+          city: payload.filters.city,
+          isActive: true,
+          listingId: { $nin: currentListingIds },
+        }
+      : {
+          source: "craigslist",
+          city: payload.filters.city,
+          isActive: true,
+        }
+
+    const deactivationResult = await collection.updateMany(deactivationFilter, {
+      $set: {
+        isActive: false,
+        offMarketAt: payload.scrapedAt,
+        offMarketAtDate: foundAtDate,
+        updatedAt: now,
+      },
+    })
+
+    if (!operations.length) {
+      console.log("No current Craigslist listings found; marked prior active city listings inactive.")
+    }
 
     console.log(
       `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,

@@ -1,5 +1,6 @@
 import { runCraigslistScraper } from "./craigslist/run"
 import { runZillowScraper } from "./zillow/run"
+import { sendDiscordAlert } from "./notifications/discord"
 
 const getArgValue = (flag: string): string | null => {
   const flagIndex = process.argv.findIndex((value) => value === flag)
@@ -26,7 +27,20 @@ const runSelectedScraper = async (): Promise<void> => {
   throw new Error('Unknown source. Use "zillow" or "craigslist" with --source.')
 }
 
-runSelectedScraper().catch((error: unknown) => {
+runSelectedScraper().catch(async (error: unknown) => {
+  const sourceArg = (getArgValue("--source") ?? "zillow").trim().toLowerCase()
+
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  const errorStack = error instanceof Error ? (error.stack ?? "") : ""
+
+  await sendDiscordAlert({
+    title: "Scraper run failed",
+    message: errorMessage,
+    source: sourceArg,
+    level: "error",
+    details: errorStack ? [`Stack: ${errorStack.split("\n").slice(0, 4).join(" | ")}`] : undefined,
+  })
+
   console.error("Scraper run failed", error)
   process.exit(1)
 })

@@ -22,6 +22,7 @@ import {
 import { isEntirePlace, isSingleFamilyHome } from "./filters"
 import { buildOutputPayload } from "./io"
 import { persistToMongo } from "./mongo"
+import { sendDiscordAlert } from "../notifications/discord"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
 
@@ -105,7 +106,9 @@ const isBotProtectionPage = async (page: Page): Promise<boolean> => {
 const loadListResultsWithRetries = async (
   page: Page,
   cityTarget: CityTarget,
-): Promise<ZillowListResult[]> => {
+): Promise<{ listResults: ZillowListResult[]; botProtectionDetected: boolean }> => {
+  let botProtectionDetected = false
+
   for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
       const backoff = RETRY_BASE_DELAY_MS * attempt + randomInRange(1000, 4000)
@@ -132,7 +135,7 @@ const loadListResultsWithRetries = async (
     const listResults = extractListResults(html)
 
     if (listResults.length > 0) {
-      return listResults
+      return { listResults, botProtectionDetected }
     }
 
     const wasBlocked = await isBotProtectionPage(page)
@@ -140,10 +143,27 @@ const loadListResultsWithRetries = async (
       break
     }
 
+    if (!botProtectionDetected) {
+      botProtectionDetected = true
+
+      await sendDiscordAlert({
+        title: "Zillow challenge detected",
+        message: "Zillow returned a bot-protection or captcha page.",
+        source: "zillow",
+        city: cityTarget.label,
+        level: "warning",
+        details: [
+          `Attempt: ${attempt}/${MAX_SCRAPE_ATTEMPTS}`,
+          `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
+          `URL: ${cityTarget.url}`,
+        ],
+      })
+    }
+
     console.log(`Zillow bot protection detected for ${cityTarget.label} on this attempt.`)
   }
 
-  return []
+  return { listResults: [], botProtectionDetected }
 }
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
@@ -165,12 +185,30 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Opening Zillow rentals search: ${cityTarget.url}`)
 
-    const listResults = await loadListResultsWithRetries(page, cityTarget)
+    const { listResults, botProtectionDetected } = await loadListResultsWithRetries(
+      page,
+      cityTarget,
+    )
 
     if (!listResults.length) {
       console.log(
         `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
       )
+
+      await sendDiscordAlert({
+        title: "Zillow scrape produced no payload",
+        message: "No listing payload was extracted after configured retries.",
+        source: "zillow",
+        city: cityTarget.label,
+        level: "warning",
+        details: [
+          `Attempts: ${MAX_SCRAPE_ATTEMPTS}`,
+          `Bot protection seen: ${botProtectionDetected ? "yes" : "no"}`,
+          `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
+          `URL: ${cityTarget.url}`,
+        ],
+      })
+
       return 0
     }
 

@@ -23,6 +23,7 @@ import {
 } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
+import { sendDiscordAlert } from "../notifications/discord"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
 
@@ -64,6 +65,16 @@ const RESULT_ROW_SELECTORS = [
   "li.cl-search-result",
   "article.cl-search-result",
   "[data-testid='search-result']",
+]
+
+const BOT_PROTECTION_PATTERNS = [
+  /verify you are human/i,
+  /press\s*&\s*hold/i,
+  /captcha/i,
+  /unusual traffic/i,
+  /security check/i,
+  /access denied/i,
+  /bot detected/i,
 ]
 
 const applyNeighborhoodFilters = async (page: Page, cityTarget: CityTarget): Promise<void> => {
@@ -140,6 +151,16 @@ const hasNoResultsState = async (page: Page): Promise<boolean> => {
 
     return Boolean(document.querySelector(".no-results.no-results-search, .cl-no-results-widget"))
   })
+}
+
+const isBotProtectionPage = async (page: Page): Promise<boolean> => {
+  const [title, bodyText] = await Promise.all([
+    page.title().catch(() => ""),
+    page.evaluate(() => document.body?.innerText?.slice(0, 6000) ?? "").catch(() => ""),
+  ])
+
+  const pageText = `${title}\n${bodyText}`
+  return BOT_PROTECTION_PATTERNS.some((pattern) => pattern.test(pageText))
 }
 
 const waitForListings = async (page: Page): Promise<boolean> => {
@@ -418,12 +439,36 @@ const scrapeCityListings = async (
     timeout: NAVIGATION_TIMEOUT_MS,
   })
 
+  if (await isBotProtectionPage(page)) {
+    await sendDiscordAlert({
+      title: "Craigslist challenge detected",
+      message: "Craigslist returned a bot-protection or captcha page.",
+      source: "craigslist",
+      city: cityTarget.label,
+      level: "warning",
+      details: [`URL: ${searchUrl}`],
+    })
+  }
+
   await applyNeighborhoodFilters(page, cityTarget)
 
   await sleep(Math.min(POST_FILTER_WAIT_TIMEOUT_MS, 2500))
 
   const hasListings = await waitForListings(page)
   if (!hasListings) {
+    const blocked = await isBotProtectionPage(page)
+
+    if (blocked) {
+      await sendDiscordAlert({
+        title: "Craigslist scrape blocked",
+        message: "No listings found because the page appears to be bot-protected.",
+        source: "craigslist",
+        city: cityTarget.label,
+        level: "warning",
+        details: [`URL: ${searchUrl}`],
+      })
+    }
+
     console.log(`No Craigslist listings found for ${cityTarget.label}.`)
     return []
   }

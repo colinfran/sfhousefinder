@@ -31,6 +31,7 @@ Monorepo with two TypeScript apps:
    |---|---|---|
    | `MONGODB_URI` | Yes | MongoDB connection string (database name is inferred from the URI path) |
    | `ZILLOW_PROXY_SERVER` | No | Proxy URL to reduce bot-protection hits (e.g. `http://host:port`) |
+  | `SCRAPER_DISCORD_WEBHOOK_URL` | No | Discord webhook URL for scraper alerts (fatal errors and bot-protection/captcha warnings) |
 
 ## Run
 

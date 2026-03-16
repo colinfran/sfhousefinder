@@ -8,7 +8,6 @@
   ],
   "scripts": {
     "dev:dashboard": "npm --workspace dashboard-app run dev",
-    "start:scraper": "npm --workspace services/scraper run start",
     "start:scraper:zillow": "npm --workspace services/scraper run start:zillow:all-cities",
     "start:scraper:craigslist": "npm --workspace services/scraper run start:craigslist:all-cities",
     "start:scraper:apartments.com": "npm --workspace services/scraper run start:apartments.com:all-cities",

@@ -28,9 +28,7 @@ const metadataBase = (() => {
       : "http://localhost:3000")
 
   const normalizedSiteUrl =
-    siteUrl.startsWith("http://") || siteUrl.startsWith("https://")
-      ? siteUrl
-      : `https://${siteUrl}`
+    siteUrl.startsWith("http://") || siteUrl.startsWith("https://") ? siteUrl : `https://${siteUrl}`
 
   try {
     return new URL(normalizedSiteUrl)

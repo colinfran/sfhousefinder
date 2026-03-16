@@ -20,7 +20,7 @@ import {
   type CityTarget,
 } from "./config"
 import { isEntirePlace, isSingleFamilyHome } from "./filters"
-import { buildOutputPayload } from "./io"
+import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendDiscordAlert } from "../discord"
 import { extractListResults, mapRentalListing } from "./parser"
@@ -245,6 +245,8 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     const outputPayload = buildOutputPayload(deduped, cityTarget.label)
 
     await persistToMongo(outputPayload)
+    const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
+    console.log(`Zillow JSON export written: ${outputPath}`)
 
     console.table(
       deduped.map((listing) => ({

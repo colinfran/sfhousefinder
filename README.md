@@ -56,20 +56,24 @@ Monorepo with two TypeScript apps:
 - Scraper — Apartments.com (all cities):
 
   ```bash
-  npm run start:scraper:apartments
+  npm run start:scraper:apartments.com
   ```
 
-  To run a single city directly from the scraper package:
+- Scraper — all sources (all cities):
 
   ```bash
-  npm --workspace services/scraper run start:craigslist:all-cities
-  # or for zillow:
-  npm --workspace services/scraper run start:zillow:all-cities
-  # or for apartments.com:
-  npm --workspace services/scraper run start:apartments.com:all-cities
+  npm run start:scraper:all
   ```
 
-  Results are written to separate MongoDB collections (`zillow`, `craigslist`, and `apartments.com`) and also exported as JSON to `services/scraper/output/`.
+To run a single source + single city:
+
+```bash
+npm --workspace services/scraper run start -- --source craigslist --city san-francisco
+# source: zillow | craigslist | apartments
+# city: san-francisco | daly-city | san-mateo | south-san-francisco | pacifica
+```
+
+Results are written to separate MongoDB collections (`zillow`, `craigslist`, and `apartments.com`) and also exported as JSON to `services/scraper/output/`.
 
 ## Scraper tuning
 
@@ -104,15 +108,24 @@ Apartments.com scraper timing can be tuned with:
 | `APARTMENTS_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
 | `APARTMENTS_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
 
-## Scraper filters
+## Default scrape filters
 
-Hard-coded in `services/scraper/src/zillow/config.ts`:
+Across all three scrapers:
 
 - **Cities**: San Francisco, Daly City, San Mateo, South San Francisco, Pacifica
-- **Price range**: $3,000 – $4,500/mo
-- **Min beds**: 2
-- **Home type**: single-family homes, entire place only
+- **Price range**: $3,000–$4,500/month
+- **Minimum bedrooms**: 2
+- **Target inventory**: single-family, entire-place rentals
 
-Craigslist uses the same city list and price/bedroom thresholds, plus text-based filtering to exclude apartment/shared-room style listings.
+Source-specific behavior:
 
-Apartments.com uses the same city list and thresholds, ignores everything below the `expendedListingWrapper` separator, and filters out room-for-rent or non-single-family style listings.
+- **Zillow**
+  - Parses Zillow list payload data (`__NEXT_DATA__`) for rentals.
+
+- **Craigslist**
+  - Uses housing search pages plus text/category filtering.
+  - Excludes shared-room/sublet-style listings and unsupported categories.
+
+- **Apartments.com**
+  - Scrapes only the primary listing container (above the expanded listing separator).
+  - Excludes room-for-rent and apartment/community-style listings.

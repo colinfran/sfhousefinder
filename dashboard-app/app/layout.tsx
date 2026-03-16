@@ -19,12 +19,27 @@ const display = Space_Grotesk({
 })
 
 const metadataBase = (() => {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL ??
+    (process.env.NODE_ENV === "production"
+      ? "https://sfhousefinder.vercel.app"
+      : "http://localhost:3000")
+
+  const normalizedSiteUrl =
+    siteUrl.startsWith("http://") || siteUrl.startsWith("https://")
+      ? siteUrl
+      : `https://${siteUrl}`
 
   try {
-    return new URL(siteUrl)
+    return new URL(normalizedSiteUrl)
   } catch {
-    return new URL("http://localhost:3000")
+    return new URL(
+      process.env.NODE_ENV === "production"
+        ? "https://sfhousefinder.vercel.app"
+        : "http://localhost:3000",
+    )
   }
 })()
 

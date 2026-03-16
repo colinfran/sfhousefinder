@@ -13,6 +13,11 @@ cd "${REPO_ROOT}"
 
 export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
 
+# Source nvm to make npm available
+if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+  source "$HOME/.nvm/nvm.sh"
+fi
+
 if [[ -f "${REPO_ROOT}/.env" ]]; then
   set -a
   source "${REPO_ROOT}/.env"

@@ -16,6 +16,7 @@ import {
   type CityTarget,
 } from "./config"
 import {
+  isAllowedListingCategory,
   isEntirePlace,
   isSingleFamilyHome,
   isInAllowedNeighborhood,
@@ -512,6 +513,11 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
         }
 
         if (!isEntirePlace(raw)) {
+          return false
+        }
+
+        if (!isAllowedListingCategory(raw)) {
+          console.log(`  Skipping unsupported category listing: "${raw.title}" url="${raw.url}"`)
           return false
         }
 

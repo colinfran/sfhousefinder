@@ -25,6 +25,21 @@ export const isEntirePlace = (raw: CraigslistRawListing): boolean => {
   return !SHARED_OR_ROOM_PATTERN.test(text)
 }
 
+const ALLOWED_CATEGORY_PATH_PATTERN = /\/(apa|hoo)\/d\//i
+
+export const isAllowedListingCategory = (raw: CraigslistRawListing): boolean => {
+  if (!raw.url) {
+    return false
+  }
+
+  try {
+    const pathname = new URL(raw.url).pathname
+    return ALLOWED_CATEGORY_PATH_PATTERN.test(pathname)
+  } catch {
+    return ALLOWED_CATEGORY_PATH_PATTERN.test(raw.url)
+  }
+}
+
 /**
  * Returns false if the city target defines allowedNeighborhoods AND the
  * listing's hoodText is non-empty but doesn't match any allowed neighborhood.

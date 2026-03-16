@@ -18,11 +18,8 @@ const ListingGrid = ({ listings }: ListingGridProps): JSX.Element => {
         <div className="col-span-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Details
         </div>
-        <div className="col-span-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Source
-        </div>
-        <div className="col-span-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Found
+        <div className="col-span-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Source / Found
         </div>
         <div className="col-span-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Actions

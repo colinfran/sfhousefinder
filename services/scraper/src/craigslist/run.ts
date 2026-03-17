@@ -80,7 +80,11 @@ const BOT_PROTECTION_PATTERNS = [
   /bot detected/i,
 ]
 
-const SYSTEM_CHROMIUM_PATHS = ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"]
+const SYSTEM_CHROMIUM_PATHS = [
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+  "/snap/bin/chromium",
+]
 
 const resolveExecutablePath = (): string | undefined => {
   const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim()

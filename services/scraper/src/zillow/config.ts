@@ -89,7 +89,10 @@ export const CITY_TARGETS: CityTarget[] = [
   {
     key: "south-san-francisco",
     label: "South San Francisco, CA",
-    url: buildCityRentalsUrlWithSearchQueryState("south-san-francisco-ca", "South San Francisco CA"),
+    url: buildCityRentalsUrlWithSearchQueryState(
+      "south-san-francisco-ca",
+      "South San Francisco CA",
+    ),
   },
   {
     key: "pacifica",

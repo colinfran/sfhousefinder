@@ -29,7 +29,7 @@ export const ROOT_ENV_PATH = resolve(currentDir, "../../../../.env")
 export const NAVIGATION_TIMEOUT_MS = parseNumberEnv(process.env.APARTMENTS_NAV_TIMEOUT_MS, 90000)
 export const LISTINGS_WAIT_TIMEOUT_MS = parseNumberEnv(
   process.env.APARTMENTS_LISTINGS_TIMEOUT_MS,
-  20000,
+  45000,
 )
 export const MAX_SCRAPE_ATTEMPTS = parseNumberEnv(process.env.APARTMENTS_MAX_ATTEMPTS, 3)
 export const PRE_NAVIGATION_MIN_DELAY_MS = parseNumberEnv(

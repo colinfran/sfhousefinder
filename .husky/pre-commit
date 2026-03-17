@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+before_lint_changes="$(mktemp)"
+after_lint_changes="$(mktemp)"
+
+git diff --name-only --diff-filter=ACMR > "$before_lint_changes"
+npm run lint:fix
+git diff --name-only --diff-filter=ACMR > "$after_lint_changes"
+
+while IFS= read -r file_path; do
+	if ! grep -Fxq "$file_path" "$before_lint_changes"; then
+		git add -- "$file_path"
+	fi
+done < "$after_lint_changes"
+
+rm -f "$before_lint_changes" "$after_lint_changes"

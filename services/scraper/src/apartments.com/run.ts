@@ -127,10 +127,32 @@ const configurePage = async (page: Page): Promise<void> => {
   })
 }
 
+const getListingRowCount = async (page: Page): Promise<number> => {
+  return page.evaluate(() => {
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        "#placardContainer [data-listingid][data-url], #placards [data-listingid][data-url], article[data-listingid][data-url], [data-listingid][data-url]",
+      ),
+    )
+
+    if (cards.length > 0) {
+      return cards.length
+    }
+
+    const fallbackRows = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        "#placardContainer [data-listingid], #placards [data-listingid], article[data-listingid], [data-listingid]",
+      ),
+    )
+
+    return fallbackRows.length
+  })
+}
+
 const waitForListings = async (page: Page): Promise<boolean> => {
   try {
     await page.waitForSelector(
-      "#placardContainer article.placard, #expendedListing, .resultCountText",
+      "#placards, #placardContainer, #placardContainer [data-listingid], #placards [data-listingid], article[data-listingid], [data-listingid][data-url], #expendedListing, .resultCountText",
       {
         timeout: LISTINGS_WAIT_TIMEOUT_MS,
       },
@@ -151,25 +173,21 @@ const waitForListings = async (page: Page): Promise<boolean> => {
     )
   }
 
-  const rowCount = await page.evaluate(() => {
-    const container = document.querySelector("#placardContainer ul")
-    if (!container) {
-      return 0
+  const maxHydrationChecks = 10
+  for (let check = 0; check < maxHydrationChecks; check += 1) {
+    const rowCount = await getListingRowCount(page)
+    if (rowCount > 0) {
+      return true
     }
 
-    let count = 0
-    for (const child of Array.from(container.children)) {
-      if (child.querySelector("article.expendedListingWrapper, #expendedListing")) {
-        break
-      }
-
-      if (child.querySelector("article.placard")) {
-        count += 1
-      }
+    if (await hasNoResultsState(page)) {
+      return false
     }
 
-    return count
-  })
+    await sleep(1200)
+  }
+
+  const rowCount = await getListingRowCount(page)
 
   if (rowCount > 0) {
     return true
@@ -260,24 +278,38 @@ const loadPageWithRetries = async (
 
 const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
   return page.evaluate(() => {
-    const container = document.querySelector("#placardContainer ul")
-    if (!container) {
-      return []
-    }
-
     const listings: ApartmentsRawListing[] = []
     const seenUrls = new Set<string>()
 
-    for (const child of Array.from(container.children)) {
-      if (child.querySelector("article.expendedListingWrapper, #expendedListing")) {
-        break
-      }
+    const primaryContainer = document.querySelector("#placardContainer ul")
+    const cards: HTMLElement[] = []
 
-      const card = child.querySelector<HTMLElement>("article.placard")
-      if (!card) {
-        continue
-      }
+    if (primaryContainer) {
+      for (const child of Array.from(primaryContainer.children)) {
+        if (child.querySelector("article.expendedListingWrapper, #expendedListing")) {
+          break
+        }
 
+        const card =
+          child.querySelector<HTMLElement>("[data-listingid][data-url]") ??
+          child.querySelector<HTMLElement>("[data-listingid]")
+        if (card) {
+          cards.push(card.closest<HTMLElement>("article") ?? card)
+        }
+      }
+    }
+
+    if (!cards.length) {
+      cards.push(
+        ...Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "#placardContainer [data-listingid][data-url], #placards [data-listingid][data-url], article[data-listingid][data-url], [data-listingid][data-url], #placardContainer [data-listingid], #placards [data-listingid], article[data-listingid]",
+          ),
+        ),
+      )
+    }
+
+    for (const card of cards) {
       const primaryLink =
         card.querySelector<HTMLAnchorElement>("a.property-link[href]") ??
         card.querySelector<HTMLAnchorElement>("a[href]")

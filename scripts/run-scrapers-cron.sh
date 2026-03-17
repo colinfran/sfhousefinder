@@ -29,7 +29,14 @@ fi
 
 run_scrapers() {
   echo "[$(date -Iseconds)] Starting scraper run" >> "${LOG_FILE}"
-  npm run start:scraper:all >> "${LOG_FILE}" 2>&1
+
+  if command -v xvfb-run >/dev/null 2>&1; then
+    xvfb-run -a npm run start:scraper:all >> "${LOG_FILE}" 2>&1
+  else
+    echo "[$(date -Iseconds)] ERROR: xvfb-run not found. Install xvfb to run headful browser without a physical display." >> "${LOG_FILE}"
+    return 1
+  fi
+
   echo "[$(date -Iseconds)] Scraper run complete" >> "${LOG_FILE}"
 }
 

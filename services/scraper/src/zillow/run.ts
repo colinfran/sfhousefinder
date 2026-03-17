@@ -194,7 +194,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   }
 
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: browserLaunchArgs,
     executablePath,
   })

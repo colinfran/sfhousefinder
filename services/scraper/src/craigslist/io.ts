@@ -8,7 +8,7 @@ const currentFilePath = fileURLToPath(import.meta.url)
 const currentDir = dirname(currentFilePath)
 const OUTPUT_DIR = resolve(currentDir, "../../output")
 
-export const buildOutputPayload = (rentals: RentalListing[], city: string): ScrapeOutput => {
+export const buildOutputPayload = (rentals: RentalListing[], city: string, scrapedSuccessfully = true): ScrapeOutput => {
   return {
     scrapedAt: new Date().toISOString(),
     filters: {
@@ -21,6 +21,7 @@ export const buildOutputPayload = (rentals: RentalListing[], city: string): Scra
     },
     count: rentals.length,
     listings: rentals,
+    scrapedSuccessfully,
   }
 }
 

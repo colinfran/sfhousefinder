@@ -142,37 +142,40 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
 
     const currentListingIds = payload.listings.map((listing) => listing.id)
 
-    const deactivationFilter = currentListingIds.length
-      ? {
-          source: "apartments.com",
-          city: payload.filters.city,
-          isActive: true,
-          listingId: { $nin: currentListingIds },
-        }
-      : {
-          source: "apartments.com",
-          city: payload.filters.city,
-          isActive: true,
-        }
-
-    const deactivationResult = await collection.updateMany(deactivationFilter, {
-      $set: {
-        isActive: false,
-        offMarketAt: payload.scrapedAt,
-        offMarketAtDate: foundAtDate,
-        updatedAt: now,
-      },
-    })
-
-    if (!operations.length) {
+    let deactivationResult = { modifiedCount: 0 }
+    if (payload.scrapedSuccessfully && currentListingIds.length) {
+      const deactivationFilter = {
+        source: "apartments.com",
+        city: payload.filters.city,
+        isActive: true,
+        listingId: { $nin: currentListingIds },
+      }
+      deactivationResult = await collection.updateMany(deactivationFilter, {
+        $set: {
+          isActive: false,
+          offMarketAt: payload.scrapedAt,
+          offMarketAtDate: foundAtDate,
+          updatedAt: now,
+        },
+      })
       console.log(
-        "No current Apartments.com listings found; marked prior active city listings inactive.",
+        `MongoDB apartments.com upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
+      )
+    } else if (!payload.scrapedSuccessfully) {
+      console.log(
+        "Scrape did not complete successfully; skipping deactivation to preserve existing listings.",
+      )
+      console.log(
+        `MongoDB apartments.com upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
+      )
+    } else {
+      console.log(
+        "No current Apartments.com listings found; skipping deactivation since scrape was incomplete.",
+      )
+      console.log(
+        `MongoDB apartments.com upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
       )
     }
-
-    console.log(
-      `MongoDB apartments.com upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
-    )
   } finally {
     await client.close()
   }

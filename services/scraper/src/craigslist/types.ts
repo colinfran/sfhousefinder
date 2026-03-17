@@ -37,4 +37,5 @@ export type ScrapeOutput = {
   filters: ScrapeFilters
   count: number
   listings: RentalListing[]
+  scrapedSuccessfully: boolean
 }

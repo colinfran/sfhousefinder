@@ -30,15 +30,15 @@ export const NEXT_DATA_TIMEOUT_MS = parseNumberEnv(process.env.ZILLOW_NEXT_DATA_
 export const MAX_SCRAPE_ATTEMPTS = parseNumberEnv(process.env.ZILLOW_MAX_ATTEMPTS, 3)
 export const PRE_NAVIGATION_MIN_DELAY_MS = parseNumberEnv(
   process.env.ZILLOW_PRE_NAV_MIN_DELAY_MS,
-  2000,
+  10000,
 )
 export const PRE_NAVIGATION_MAX_DELAY_MS = parseNumberEnv(
   process.env.ZILLOW_PRE_NAV_MAX_DELAY_MS,
-  5000,
+  30000,
 )
-export const RETRY_BASE_DELAY_MS = parseNumberEnv(process.env.ZILLOW_RETRY_BASE_DELAY_MS, 7000)
-export const CITY_COOLDOWN_MIN_MS = parseNumberEnv(process.env.ZILLOW_CITY_COOLDOWN_MIN_MS, 60000)
-export const CITY_COOLDOWN_MAX_MS = parseNumberEnv(process.env.ZILLOW_CITY_COOLDOWN_MAX_MS, 180000)
+export const RETRY_BASE_DELAY_MS = parseNumberEnv(process.env.ZILLOW_RETRY_BASE_DELAY_MS, 20000)
+export const CITY_COOLDOWN_MIN_MS = parseNumberEnv(process.env.ZILLOW_CITY_COOLDOWN_MIN_MS, 180000)
+export const CITY_COOLDOWN_MAX_MS = parseNumberEnv(process.env.ZILLOW_CITY_COOLDOWN_MAX_MS, 600000)
 
 export const PROXY_SERVER = process.env.ZILLOW_PROXY_SERVER ?? ""
 

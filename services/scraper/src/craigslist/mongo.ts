@@ -73,37 +73,41 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
 
     const currentListingIds = payload.listings.map((listing) => listing.id)
 
-    const deactivationFilter = currentListingIds.length
-      ? {
-          source: "craigslist",
-          city: payload.filters.city,
-          isActive: true,
-          listingId: { $nin: currentListingIds },
-        }
-      : {
-          source: "craigslist",
-          city: payload.filters.city,
-          isActive: true,
-        }
+    if (payload.scrapedSuccessfully && currentListingIds.length) {
+      const deactivationFilter = {
+        source: "craigslist",
+        city: payload.filters.city,
+        isActive: true,
+        listingId: { $nin: currentListingIds },
+      }
 
-    const deactivationResult = await collection.updateMany(deactivationFilter, {
-      $set: {
-        isActive: false,
-        offMarketAt: payload.scrapedAt,
-        offMarketAtDate: foundAtDate,
-        updatedAt: now,
-      },
-    })
+      const deactivationResult = await collection.updateMany(deactivationFilter, {
+        $set: {
+          isActive: false,
+          offMarketAt: payload.scrapedAt,
+          offMarketAtDate: foundAtDate,
+          updatedAt: now,
+        },
+      })
 
-    if (!operations.length) {
       console.log(
-        "No current Craigslist listings found; marked prior active city listings inactive.",
+        `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
+      )
+    } else if (!payload.scrapedSuccessfully) {
+      console.log(
+        "Scrape did not complete successfully; skipping deactivation to preserve existing listings.",
+      )
+      console.log(
+        `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
+      )
+    } else {
+      console.log(
+        "No current Craigslist listings found; skipping deactivation since scrape was incomplete.",
+      )
+      console.log(
+        `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
       )
     }
-
-    console.log(
-      `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
-    )
   } finally {
     await client.close()
   }

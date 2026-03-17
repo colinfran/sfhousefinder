@@ -76,29 +76,42 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
 
     const currentListingIds = payload.listings.map((listing) => listing.id)
 
-    const deactivationResult =
-      currentListingIds.length > 0
-        ? await collection.updateMany(
-            {
-              source: "zillow",
-              city: payload.filters.city,
-              isActive: true,
-              listingId: { $nin: currentListingIds },
-            },
-            {
-              $set: {
-                isActive: false,
-                offMarketAt: payload.scrapedAt,
-                offMarketAtDate: foundAtDate,
-                updatedAt: now,
-              },
-            },
-          )
-        : { modifiedCount: 0 }
-
-    console.log(
-      `MongoDB zillow upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
-    )
+    let deactivationResult = { modifiedCount: 0 }
+    if (payload.scrapedSuccessfully && currentListingIds.length > 0) {
+      deactivationResult = await collection.updateMany(
+        {
+          source: "zillow",
+          city: payload.filters.city,
+          isActive: true,
+          listingId: { $nin: currentListingIds },
+        },
+        {
+          $set: {
+            isActive: false,
+            offMarketAt: payload.scrapedAt,
+            offMarketAtDate: foundAtDate,
+            updatedAt: now,
+          },
+        },
+      )
+      console.log(
+        `MongoDB zillow upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
+      )
+    } else if (!payload.scrapedSuccessfully) {
+      console.log(
+        "Scrape did not complete successfully; skipping deactivation to preserve existing listings.",
+      )
+      console.log(
+        `MongoDB zillow upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
+      )
+    } else {
+      console.log(
+        "No current Zillow listings found; skipping deactivation since scrape was incomplete.",
+      )
+      console.log(
+        `MongoDB zillow upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
+      )
+    }
   } finally {
     await client.close()
   }

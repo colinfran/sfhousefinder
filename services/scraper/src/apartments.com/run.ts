@@ -25,6 +25,7 @@ import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { mapRentalListing } from "./parser"
 import { sendDiscordAlert } from "../discord"
+import { appendFailureHtmlLog } from "../failure-html-log"
 import type { ApartmentsRawListing } from "./types"
 
 loadEnv({ path: ROOT_ENV_PATH })
@@ -230,8 +231,24 @@ const loadPageWithRetries = async (
       continue
     }
 
-    const hasListings = await waitForListings(page)
-    return { hasListings, botProtectionDetected }
+    try {
+      const hasListings = await waitForListings(page)
+      return { hasListings, botProtectionDetected }
+    } catch (error) {
+      const html = await page.content().catch(() => "")
+      const title = await page.title().catch(() => "")
+
+      await appendFailureHtmlLog({
+        source: "apartments",
+        city: cityTarget.label,
+        reason: error instanceof Error ? error.message : "Apartments listings wait failed",
+        url: page.url(),
+        title,
+        html,
+      })
+
+      throw error
+    }
   }
 
   return { hasListings: false, botProtectionDetected }
@@ -334,6 +351,18 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     const { hasListings, botProtectionDetected } = await loadPageWithRetries(page, cityTarget)
 
     if (!hasListings && botProtectionDetected) {
+      const html = await page.content().catch(() => "")
+      const title = await page.title().catch(() => "")
+
+      await appendFailureHtmlLog({
+        source: "apartments",
+        city: cityTarget.label,
+        reason: "No listings payload after retries with bot-protection detected",
+        url: page.url(),
+        title,
+        html,
+      })
+
       await sendDiscordAlert({
         title: "Apartments.com scrape produced no payload",
         message: "No Apartments.com listing payload was extracted after configured retries.",
@@ -358,7 +387,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     if (!hasListings) {
       console.log(`No Apartments.com listings found for ${cityTarget.label}.`)
 
-      const outputPayload = buildOutputPayload([], cityTarget.label)
+      const outputPayload = buildOutputPayload([], cityTarget.label, false)
       await persistToMongo(outputPayload)
       await writeOutputToFile(outputPayload, cityTarget.key)
       return 0
@@ -397,7 +426,8 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
 
-    const outputPayload = buildOutputPayload(deduped, cityTarget.label)
+    const scrapedSuccessfully = deduped.length > 0
+    const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
 
     await persistToMongo(outputPayload)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)

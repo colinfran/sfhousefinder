@@ -34,25 +34,25 @@ export const LISTINGS_WAIT_TIMEOUT_MS = parseNumberEnv(
 export const MAX_SCRAPE_ATTEMPTS = parseNumberEnv(process.env.APARTMENTS_MAX_ATTEMPTS, 3)
 export const PRE_NAVIGATION_MIN_DELAY_MS = parseNumberEnv(
   process.env.APARTMENTS_PRE_NAV_MIN_DELAY_MS,
-  2000,
+  10000,
 )
 export const PRE_NAVIGATION_MAX_DELAY_MS = parseNumberEnv(
   process.env.APARTMENTS_PRE_NAV_MAX_DELAY_MS,
-  5000,
+  30000,
 )
-export const RETRY_BASE_DELAY_MS = parseNumberEnv(process.env.APARTMENTS_RETRY_BASE_DELAY_MS, 7000)
+export const RETRY_BASE_DELAY_MS = parseNumberEnv(process.env.APARTMENTS_RETRY_BASE_DELAY_MS, 20000)
 export const CITY_COOLDOWN_MIN_MS = parseNumberEnv(
   process.env.APARTMENTS_CITY_COOLDOWN_MIN_MS,
-  30000,
+  180000,
 )
 export const CITY_COOLDOWN_MAX_MS = parseNumberEnv(
   process.env.APARTMENTS_CITY_COOLDOWN_MAX_MS,
-  90000,
+  600000,
 )
 export const PROXY_SERVER = process.env.APARTMENTS_PROXY_SERVER ?? ""
 
 const buildApartmentsUrl = (citySlug: string): string => {
-  return `https://www.apartments.com/houses-townhomes/${citySlug}/min-${MIN_BEDS}-bedrooms-${MIN_PRICE}-to-${MAX_PRICE}/`
+  return `https://www.apartments.com/houses/${citySlug}/min-${MIN_BEDS}-bedrooms-${MIN_PRICE}-to-${MAX_PRICE}/`
 }
 
 export const CITY_TARGETS: CityTarget[] = [

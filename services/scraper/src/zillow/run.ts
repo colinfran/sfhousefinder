@@ -24,6 +24,7 @@ import { isEntirePlace, isSingleFamilyHome } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendDiscordAlert } from "../discord"
+import { appendFailureHtmlLog } from "../failure-html-log"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
 
@@ -211,6 +212,18 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     )
 
     if (!listResults.length) {
+      const html = await page.content().catch(() => "")
+      const title = await page.title().catch(() => "")
+
+      await appendFailureHtmlLog({
+        source: "zillow",
+        city: cityTarget.label,
+        reason: "No listings payload extracted after retries",
+        url: page.url(),
+        title,
+        html,
+      })
+
       console.log(
         `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
       )
@@ -262,7 +275,8 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
 
-    const outputPayload = buildOutputPayload(deduped, cityTarget.label)
+    const scrapedSuccessfully = deduped.length > 0
+    const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
 
     await persistToMongo(outputPayload)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)

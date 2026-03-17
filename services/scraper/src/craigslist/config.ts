@@ -41,11 +41,11 @@ export const LISTINGS_WAIT_TIMEOUT_MS = parseNumberEnv(
 )
 export const CITY_COOLDOWN_MIN_MS = parseNumberEnv(
   process.env.CRAIGSLIST_CITY_COOLDOWN_MIN_MS,
-  30000,
+  120000,
 )
 export const CITY_COOLDOWN_MAX_MS = parseNumberEnv(
   process.env.CRAIGSLIST_CITY_COOLDOWN_MAX_MS,
-  90000,
+  300000,
 )
 export const POST_FILTER_WAIT_TIMEOUT_MS = parseNumberEnv(
   process.env.CRAIGSLIST_POST_FILTER_WAIT_TIMEOUT_MS,

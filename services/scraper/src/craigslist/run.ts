@@ -26,6 +26,7 @@ import {
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendDiscordAlert } from "../discord"
+import { appendFailureHtmlLog } from "../failure-html-log"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
 
@@ -473,11 +474,41 @@ const scrapeCityListings = async (
 
   await sleep(Math.min(POST_FILTER_WAIT_TIMEOUT_MS, 2500))
 
-  const hasListings = await waitForListings(page)
+  let hasListings = false
+  try {
+    hasListings = await waitForListings(page)
+  } catch (error) {
+    const html = await page.content().catch(() => "")
+    const title = await page.title().catch(() => "")
+
+    await appendFailureHtmlLog({
+      source: "craigslist",
+      city: cityTarget.label,
+      reason: error instanceof Error ? error.message : "Craigslist listings wait failed",
+      url: page.url(),
+      title,
+      html,
+    })
+
+    throw error
+  }
+
   if (!hasListings) {
     const blocked = await isBotProtectionPage(page)
 
     if (blocked) {
+      const html = await page.content().catch(() => "")
+      const title = await page.title().catch(() => "")
+
+      await appendFailureHtmlLog({
+        source: "craigslist",
+        city: cityTarget.label,
+        reason: "No listings found and bot-protection page detected",
+        url: page.url(),
+        title,
+        html,
+      })
+
       await sendDiscordAlert({
         title: "Craigslist scrape blocked",
         message: "No listings found because the page appears to be bot-protected.",
@@ -562,7 +593,8 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Found ${deduped.length} ${cityTarget.label} Craigslist rentals matching filters.`)
 
-    const outputPayload = buildOutputPayload(deduped, cityTarget.label)
+    const scrapedSuccessfully = deduped.length > 0
+    const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
     console.log(`Craigslist JSON export written: ${outputPath}`)
 

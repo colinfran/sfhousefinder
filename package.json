@@ -12,7 +12,7 @@
     "start:scraper:craigslist": "npm --workspace services/scraper run start:craigslist:all-cities",
     "start:scraper:apartments.com": "npm --workspace services/scraper run start:apartments.com:all-cities",
     "start:scraper:all": "npm run start:scraper:zillow && npm run start:scraper:craigslist && npm run start:scraper:apartments.com",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "build": "npm run build --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

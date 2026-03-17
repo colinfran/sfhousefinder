@@ -27,6 +27,7 @@ export default tseslint.config(
       "**/next-env.d.ts",
       "next-env.d.ts",
       "public/**",
+      ".husky/**",
     ],
   },
   js.configs.recommended,

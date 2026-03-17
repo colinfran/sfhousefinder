@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config as loadEnv } from "dotenv"
+import { existsSync } from "node:fs"
 import type { Page } from "puppeteer"
 import {
   CITY_COOLDOWN_MAX_MS,
@@ -44,6 +45,23 @@ const BOT_PROTECTION_PATTERNS = [
   /access denied/i,
   /bot detected/i,
 ]
+
+const SYSTEM_CHROMIUM_PATHS = ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"]
+
+const resolveExecutablePath = (): string | undefined => {
+  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim()
+  if (configuredPath) {
+    return configuredPath
+  }
+
+  for (const path of SYSTEM_CHROMIUM_PATHS) {
+    if (existsSync(path)) {
+      return path
+    }
+  }
+
+  return undefined
+}
 
 const sleep = async (milliseconds: number): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -295,6 +313,7 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
+  const executablePath = resolveExecutablePath()
 
   if (PROXY_SERVER) {
     browserLaunchArgs.push(`--proxy-server=${PROXY_SERVER}`)
@@ -303,6 +322,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const browser = await puppeteer.launch({
     headless: false,
     args: browserLaunchArgs,
+    executablePath,
   })
 
   try {

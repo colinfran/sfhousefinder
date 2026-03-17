@@ -1,4 +1,5 @@
 import { config as loadEnv } from "dotenv"
+import { existsSync } from "node:fs"
 import puppeteer from "puppeteer"
 import type { Page } from "puppeteer"
 import {
@@ -77,6 +78,23 @@ const BOT_PROTECTION_PATTERNS = [
   /access denied/i,
   /bot detected/i,
 ]
+
+const SYSTEM_CHROMIUM_PATHS = ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"]
+
+const resolveExecutablePath = (): string | undefined => {
+  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH?.trim()
+  if (configuredPath) {
+    return configuredPath
+  }
+
+  for (const path of SYSTEM_CHROMIUM_PATHS) {
+    if (existsSync(path)) {
+      return path
+    }
+  }
+
+  return undefined
+}
 
 const applyNeighborhoodFilters = async (page: Page, cityTarget: CityTarget): Promise<void> => {
   if (!cityTarget.neighborhoodKeywords?.length) {
@@ -480,9 +498,12 @@ const scrapeCityListings = async (
 }
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
+  const executablePath = resolveExecutablePath()
+
   const browser = await puppeteer.launch({
     headless: false,
     args: ["--no-sandbox"],
+    executablePath,
   })
 
   try {

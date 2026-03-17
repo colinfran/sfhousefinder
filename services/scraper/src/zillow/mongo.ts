@@ -50,8 +50,6 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
             listingId: listing.id,
             source: "zillow",
             city: payload.filters.city,
-            foundAt: payload.scrapedAt,
-            foundAtDate,
             lastSeenAt: payload.scrapedAt,
             lastSeenAtDate: foundAtDate,
             isActive: true,
@@ -61,6 +59,8 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
           },
           $setOnInsert: {
             createdAt: now,
+            foundAt: payload.scrapedAt,
+            foundAtDate,
           },
         },
         upsert: true,

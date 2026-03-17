@@ -42,6 +42,7 @@ export type DashboardListing = {
   baths: number | null
   beds: number | null
   city: string
+  foundAt: string | null
   googleMapsUrl: string | null
   homeStatus: string
   homeType: string
@@ -124,6 +125,12 @@ const toDisplayListing = (document: ListingDocument): DashboardListing => ({
   baths: document.baths ?? null,
   beds: document.beds ?? null,
   city: document.city ?? "Unknown city",
+  foundAt:
+    typeof document.foundAtDate === "string"
+      ? document.foundAtDate
+      : document.foundAtDate instanceof Date
+        ? document.foundAtDate.toISOString()
+        : (document.foundAt ?? null),
   googleMapsUrl: document.googleMapsUrl ?? null,
   homeStatus: document.homeStatus ?? "UNKNOWN",
   homeType: document.homeType ?? "UNKNOWN",

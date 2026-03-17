@@ -21,18 +21,47 @@ export const extractListResults = (html: string): ZillowListResult[] => {
     props?: {
       pageProps?: {
         searchPageState?: {
-          cat1?: { searchResults?: { listResults?: ZillowListResult[] } }
-          cat2?: { searchResults?: { listResults?: ZillowListResult[] } }
+          cat1?: {
+            searchResults?: {
+              listResults?: ZillowListResult[]
+              mapResults?: ZillowListResult[]
+            }
+          }
+          cat2?: {
+            searchResults?: {
+              listResults?: ZillowListResult[]
+              mapResults?: ZillowListResult[]
+            }
+          }
         }
       }
     }
   }
 
-  return (
-    data.props?.pageProps?.searchPageState?.cat1?.searchResults?.listResults ??
-    data.props?.pageProps?.searchPageState?.cat2?.searchResults?.listResults ??
-    []
-  )
+  const cat1List = data.props?.pageProps?.searchPageState?.cat1?.searchResults?.listResults ?? []
+  const cat2List = data.props?.pageProps?.searchPageState?.cat2?.searchResults?.listResults ?? []
+  const cat1Map = data.props?.pageProps?.searchPageState?.cat1?.searchResults?.mapResults ?? []
+  const cat2Map = data.props?.pageProps?.searchPageState?.cat2?.searchResults?.mapResults ?? []
+
+  const combined = [...cat1List, ...cat2List, ...cat1Map, ...cat2Map]
+  if (!combined.length) {
+    return []
+  }
+
+  const dedupedByKey = new Map<string, ZillowListResult>()
+
+  for (const listing of combined) {
+    const key = String(listing.zpid ?? listing.id ?? listing.detailUrl ?? "")
+    if (!key) {
+      continue
+    }
+
+    if (!dedupedByKey.has(key)) {
+      dedupedByKey.set(key, listing)
+    }
+  }
+
+  return Array.from(dedupedByKey.values())
 }
 
 export const mapRentalListing = (listing: ZillowListResult): RentalListing => {

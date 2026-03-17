@@ -80,7 +80,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
         <div className="flex min-w-0 items-center gap-3">
           <Badge variant="outline">{formatSource(listing.source)}</Badge>
           <span className="truncate text-xs text-muted-foreground">
-            {formatTimestamp(listing.lastSeenAt)}
+            {formatTimestamp(listing.foundAt)}
           </span>
         </div>
 
@@ -109,7 +109,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
 
       <div className="col-span-3 hidden lg:flex lg:flex-col lg:items-start lg:gap-1">
         <Badge variant="outline">{formatSource(listing.source)}</Badge>
-        <span className="text-xs text-muted-foreground">{formatTimestamp(listing.lastSeenAt)}</span>
+        <span className="text-xs text-muted-foreground">{formatTimestamp(listing.foundAt)}</span>
       </div>
 
       <div className="col-span-2 hidden items-center gap-2 lg:flex lg:justify-end">

@@ -29,6 +29,7 @@ type ListingDocument = {
   source?: string
   title?: string
   location?: string
+  notRelevant?: boolean
   url?: string
 }
 
@@ -54,6 +55,7 @@ export type DashboardListing = {
   source: string
   title: string | null
   location: string | null
+  notRelevant: boolean
   url: string
 }
 
@@ -147,6 +149,7 @@ const toDisplayListing = (document: ListingDocument): DashboardListing => ({
   source: document.source ?? "Unknown",
   title: document.title ?? null,
   location: document.location ?? null,
+  notRelevant: document.notRelevant ?? false,
   url: document.url ?? "#",
 })
 
@@ -216,6 +219,12 @@ const toDate = (value: Date | string | undefined): Date | null => {
 }
 
 const compareListings = (left: ListingDocument, right: ListingDocument): number => {
+  const leftRank = left.isActive === false || left.notRelevant === true ? 1 : 0
+  const rightRank = right.isActive === false || right.notRelevant === true ? 1 : 0
+  if (leftRank !== rightRank) {
+    return leftRank - rightRank
+  }
+
   const leftFoundAt = toDate(left.foundAtDate ?? left.foundAt)?.getTime() ?? 0
   const rightFoundAt = toDate(right.foundAtDate ?? right.foundAt)?.getTime() ?? 0
   if (leftFoundAt !== rightFoundAt) {
@@ -234,6 +243,12 @@ const compareListings = (left: ListingDocument, right: ListingDocument): number 
 }
 
 const compareCheapest = (left: ListingDocument, right: ListingDocument): number => {
+  const leftRank = left.isActive === false || left.notRelevant === true ? 1 : 0
+  const rightRank = right.isActive === false || right.notRelevant === true ? 1 : 0
+  if (leftRank !== rightRank) {
+    return leftRank - rightRank
+  }
+
   const leftPrice = left.price ?? Number.MAX_SAFE_INTEGER
   const rightPrice = right.price ?? Number.MAX_SAFE_INTEGER
   if (leftPrice !== rightPrice) {
@@ -370,7 +385,7 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
       Promise.all(enabledCollections.map((collection) => collection.countDocuments(displayFilter))),
       Promise.all(
         enabledCollections.map((collection) =>
-          collection.find(displayFilter).sort(listingSort).limit(60).toArray(),
+          collection.find(displayFilter).sort(listingSort).toArray(),
         ),
       ),
       Promise.all(
@@ -389,7 +404,7 @@ export const getDashboardData = async (filters: DashboardFilters): Promise<Dashb
       ),
     ])
 
-    const listings = listingsByCollection.flat().sort(compareListings).slice(0, 60)
+    const listings = listingsByCollection.flat().sort(compareListings)
     const cheapestListings = cheapestByCollection.flat().sort(compareCheapest).slice(0, 3)
 
     const cityOptions = [

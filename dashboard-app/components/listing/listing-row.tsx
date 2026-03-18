@@ -1,11 +1,11 @@
-import { ArrowUpRight, Bath, BedDouble, MapPin } from "lucide-react"
+import { Bath, BedDouble, MapPin } from "lucide-react"
 import type { JSX } from "react"
 
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
 import type { DashboardListing } from "@/lib/dashboard-data"
 import { cn } from "@/lib/utils"
 
+import { ListingActionsMenu } from "./listing-actions-menu"
 import { ListingImage } from "./listing-image"
 import { formatCurrency, formatHomeType, formatSource, formatTimestamp } from "./listing-utils"
 
@@ -22,7 +22,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
     <div
       className={cn(
         "group relative flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid lg:grid-cols-12 lg:items-center lg:gap-4",
-        !listing.isActive && "opacity-60",
+        (!listing.isActive || listing.notRelevant) && "opacity-60",
       )}
     >
       <div className="col-span-5 flex min-w-0 gap-3 overflow-hidden">
@@ -57,6 +57,14 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
             >
               {listing.isActive ? "Active" : "Inactive"}
             </Badge>
+            {listing.notRelevant ? (
+              <Badge
+                className="bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                variant="secondary"
+              >
+                Not Relevant
+              </Badge>
+            ) : null}
             <Badge variant="outline">{formatHomeType(listing.homeType)}</Badge>
           </div>
         </div>
@@ -84,27 +92,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {listing.googleMapsUrl ? (
-            <a
-              className={buttonVariants({ size: "sm", variant: "outline" })}
-              href={listing.googleMapsUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Map
-            </a>
-          ) : null}
-          <a
-            className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}
-            href={listing.url}
-            rel="noreferrer"
-            target="_blank"
-          >
-            View
-            <ArrowUpRight className="h-4 w-4" />
-          </a>
-        </div>
+        <ListingActionsMenu listing={listing} />
       </div>
 
       <div className="col-span-3 hidden lg:flex lg:flex-col lg:items-start lg:gap-1">
@@ -113,25 +101,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
       </div>
 
       <div className="col-span-2 hidden items-center gap-2 lg:flex lg:justify-end">
-        {listing.googleMapsUrl ? (
-          <a
-            className={buttonVariants({ size: "sm", variant: "outline" })}
-            href={listing.googleMapsUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Map
-          </a>
-        ) : null}
-        <a
-          className={cn(buttonVariants({ size: "sm", variant: "outline" }), "gap-1.5")}
-          href={listing.url}
-          rel="noreferrer"
-          target="_blank"
-        >
-          View
-          <ArrowUpRight className="h-4 w-4" />
-        </a>
+        <ListingActionsMenu listing={listing} />
       </div>
     </div>
   )

@@ -61,6 +61,7 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
             createdAt: now,
             foundAt: payload.scrapedAt,
             foundAtDate,
+            notRelevant: false,
           },
         },
         upsert: true,

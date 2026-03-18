@@ -18,7 +18,7 @@ const normalizeLocationText = (value: string): string => {
 }
 
 export const isSingleFamilyHome = (raw: ApartmentsRawListing, mapped: RentalListing): boolean => {
-  const text = `${raw.title} ${raw.address} ${raw.propertyTypeText} ${raw.url}`.toLowerCase()
+  const text = `${raw.title} ${raw.address} ${raw.propertyTypeText}`.toLowerCase()
 
   if (NON_SINGLE_FAMILY_PATTERN.test(text)) {
     return false

@@ -83,3 +83,16 @@ export const buildQueryString = (
   const queryString = params.toString()
   return queryString ? `/?${queryString}` : "/"
 }
+
+export const badgeColor = (source: string): string => {
+  switch (source) {
+    case "craigslist":
+      return "bg-[#800080] text-white"
+    case "zillow":
+      return "bg-[#1277e1] text-white"
+    case "apartments.com":
+      return "bg-[#367B01] text-white"
+    default:
+      return "bg-muted text-foreground"
+  }
+}

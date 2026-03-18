@@ -1,0 +1,14 @@
+{
+  "scrapedAt": "2026-03-18T04:19:47.434Z",
+  "filters": {
+    "city": "San Francisco, CA",
+    "minPrice": 3000,
+    "maxPrice": 4500,
+    "minBeds": 2,
+    "homeType": "single_family_house",
+    "spaceType": "entire_place"
+  },
+  "count": 0,
+  "listings": [],
+  "scrapedSuccessfully": false
+}

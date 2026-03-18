@@ -3,12 +3,12 @@ export const parseNumber = (value: unknown): number | null => {
     return null
   }
 
-  const cleaned = String(value).replace(/[^\d.]/g, "")
-  if (!cleaned) {
+  const match = String(value).match(/\d[\d,]*(?:\.\d+)?/)
+  if (!match?.[0]) {
     return null
   }
 
-  const numeric = Number(cleaned)
+  const numeric = Number(match[0].replace(/,/g, ""))
   return Number.isFinite(numeric) ? numeric : null
 }
 

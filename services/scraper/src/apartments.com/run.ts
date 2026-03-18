@@ -303,7 +303,7 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
       cards.push(
         ...Array.from(
           document.querySelectorAll<HTMLElement>(
-            "#placardContainer [data-listingid][data-url], #placards [data-listingid][data-url], article[data-listingid][data-url], [data-listingid][data-url], #placardContainer [data-listingid], #placards [data-listingid], article[data-listingid]",
+            "#placardContainer article, #placards article, article[data-listingid][data-url], [data-listingid][data-url], #placardContainer [data-listingid], #placards [data-listingid], article[data-listingid], li[data-listingid], .placard, .mortar-wrapper",
           ),
         ),
       )
@@ -312,6 +312,8 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
     for (const card of cards) {
       const primaryLink =
         card.querySelector<HTMLAnchorElement>("a.property-link[href]") ??
+        card.querySelector<HTMLAnchorElement>("a[data-url][href]") ??
+        card.querySelector<HTMLAnchorElement>(".propertyLink[href]") ??
         card.querySelector<HTMLAnchorElement>("a[href]")
       const url = card.getAttribute("data-url") ?? primaryLink?.href ?? ""
 
@@ -348,7 +350,7 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
         ""
 
       listings.push({
-        id: card.getAttribute("data-listingid") ?? url,
+        id: card.getAttribute("data-listingid") ?? card.id ?? url,
         title,
         address,
         priceText,
@@ -430,13 +432,23 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     }
 
     const rawListings = await extractRows(page)
+    console.log(
+      `Extracted ${rawListings.length} raw Apartments.com listing cards for ${cityTarget.label}.`,
+    )
 
-    const rentals = rawListings
-      .filter((listing) => matchesTargetCity(listing, cityTarget))
-      .map((listing) => ({
-        listing,
-        mapped: mapRentalListing(listing),
-      }))
+    const cityMatchedListings = rawListings.filter((listing) =>
+      matchesTargetCity(listing, cityTarget),
+    )
+    console.log(
+      `${cityMatchedListings.length} Apartments.com listings matched ${cityTarget.label} location filters.`,
+    )
+
+    const mappedListings = cityMatchedListings.map((listing) => ({
+      listing,
+      mapped: mapRentalListing(listing),
+    }))
+
+    const rentals = mappedListings
       .filter(({ mapped, listing }) => {
         if (mapped.price === null || mapped.beds === null) {
           return false

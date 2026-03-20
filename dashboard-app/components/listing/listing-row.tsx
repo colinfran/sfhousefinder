@@ -75,7 +75,7 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
           </div>
 
           {listing.notes ? (
-            <p className="line-clamp-2 pt-1 text-xs text-muted-foreground">{listing.notes}</p>
+            <p className="line-clamp-2 pt-1 text-xs text-muted-foreground">{`Notes: ${listing.notes}`}</p>
           ) : null}
         </div>
       </div>

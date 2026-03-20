@@ -1,7 +1,7 @@
 import { runApartmentsScraper } from "./apartments.com/run"
 import { runCraigslistScraper } from "./craigslist/run"
 import { runZillowScraper } from "./zillow/run"
-import { sendDiscordAlert } from "./discord"
+import { sendErrorDiscordAlert } from "./error-discord"
 
 const getArgValue = (flag: string): string | null => {
   const flagIndex = process.argv.findIndex((value) => value === flag)
@@ -39,7 +39,7 @@ runSelectedScraper().catch(async (error: unknown) => {
   const errorMessage = error instanceof Error ? error.message : String(error)
   const errorStack = error instanceof Error ? (error.stack ?? "") : ""
 
-  await sendDiscordAlert({
+  await sendErrorDiscordAlert({
     title: "Scraper run failed",
     message: errorMessage,
     source: sourceArg,

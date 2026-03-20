@@ -1,6 +1,7 @@
 import { MongoClient } from "mongodb"
 import { buildGoogleMapsUrl } from "./helpers"
 import type { ScrapeOutput } from "./types"
+import { emptyPersistenceSummary, type PersistenceSummary } from "../persistence"
 
 const getMongoUri = (): string | null => {
   const mongoUri = process.env.MONGODB_URI ?? null
@@ -24,11 +25,11 @@ const getMongoDbName = (mongoUri: string): string => {
   return "sfhousefinder"
 }
 
-export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
+export const persistToMongo = async (payload: ScrapeOutput): Promise<PersistenceSummary> => {
   const mongoUri = getMongoUri()
   if (!mongoUri) {
     console.log("MongoDB URI not configured. Skipping Mongo persistence.")
-    return
+    return emptyPersistenceSummary("MongoDB URI not configured. Skipping Mongo persistence.")
   }
 
   const dbName = getMongoDbName(mongoUri)
@@ -73,6 +74,8 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
       : { matchedCount: 0, modifiedCount: 0, upsertedCount: 0 }
 
     const currentListingIds = payload.listings.map((listing) => listing.id)
+    let deactivationResult = { modifiedCount: 0 }
+    let skipReason: string | null = null
 
     if (payload.scrapedSuccessfully && currentListingIds.length) {
       const deactivationFilter = {
@@ -82,7 +85,7 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
         listingId: { $nin: currentListingIds },
       }
 
-      const deactivationResult = await collection.updateMany(deactivationFilter, {
+      deactivationResult = await collection.updateMany(deactivationFilter, {
         $set: {
           isActive: false,
           offMarketAt: payload.scrapedAt,
@@ -95,6 +98,8 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
         `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=${deactivationResult.modifiedCount}`,
       )
     } else if (!payload.scrapedSuccessfully) {
+      skipReason =
+        "Scrape did not complete successfully; skipped deactivation to preserve existing listings."
       console.log(
         "Scrape did not complete successfully; skipping deactivation to preserve existing listings.",
       )
@@ -102,12 +107,24 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<void> => {
         `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
       )
     } else {
+      skipReason =
+        "No current Craigslist listings found; skipping deactivation since scrape was incomplete."
       console.log(
         "No current Craigslist listings found; skipping deactivation since scrape was incomplete.",
       )
       console.log(
         `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,
       )
+    }
+
+    return {
+      persisted: true,
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+      upsertedCount: result.upsertedCount,
+      deactivatedCount: deactivationResult.modifiedCount,
+      skippedDeactivation: Boolean(skipReason),
+      skipReason,
     }
   } finally {
     await client.close()

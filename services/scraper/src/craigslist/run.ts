@@ -26,9 +26,10 @@ import {
 } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
-import { sendDiscordAlert } from "../discord"
+import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
 import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { sendScrapeSuccessAlert } from "../success-discord"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
 
@@ -466,7 +467,7 @@ const scrapeCityListings = async (
   })
 
   if (await isBotProtectionPage(page)) {
-    await sendDiscordAlert({
+    await sendErrorDiscordAlert({
       title: "Craigslist challenge detected",
       message: "Craigslist returned a bot-protection or captcha page.",
       source: "craigslist",
@@ -515,7 +516,7 @@ const scrapeCityListings = async (
         html,
       })
 
-      await sendDiscordAlert({
+      await sendErrorDiscordAlert({
         title: "Craigslist scrape blocked",
         message: "No listings found because the page appears to be bot-protected.",
         source: "craigslist",
@@ -608,7 +609,16 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
     console.log(`Craigslist JSON export written: ${outputPath}`)
 
-    await persistToMongo(outputPayload)
+    const persistence = await persistToMongo(outputPayload)
+
+    await sendScrapeSuccessAlert({
+      source: "craigslist",
+      city: cityTarget.label,
+      scrapedAt: outputPayload.scrapedAt,
+      count: deduped.length,
+      scrapedSuccessfully,
+      persistence,
+    })
 
     console.table(
       deduped.map((listing) => ({

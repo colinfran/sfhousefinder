@@ -31,7 +31,8 @@ Monorepo with two TypeScript apps:
    |---|---|---|
    | `MONGODB_URI` | Yes | MongoDB connection string (database name is inferred from the URI path) |
    | `SCRAPER_PROXY_SERVER` | No | Shared Evomi proxy for all scrapers. Format: `http://host:port:username:password` |
-  | `SCRAPER_DISCORD_WEBHOOK_URL` | No | Discord webhook URL for scraper alerts (fatal errors and bot-protection/captcha warnings) |
+  | `SCRAPER_DISCORD_WEBHOOK_URL_ERROR` | No | Discord webhook URL for scraper error alerts (fatal errors and bot-protection/captcha warnings) |
+  | `SCRAPER_DISCORD_WEBHOOK_URL_SUCCESS` | No | Discord webhook URL for scraper success alerts with scrape and persistence stats |
 
 ## Run
 

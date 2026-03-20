@@ -9,7 +9,7 @@ type DiscordAlertOptions = {
   details?: string[]
 }
 
-const DISCORD_WEBHOOK_URL = (process.env.SCRAPER_DISCORD_WEBHOOK_URL ?? "").trim()
+const DISCORD_WEBHOOK_URL = (process.env.SCRAPER_DISCORD_WEBHOOK_URL_ERROR ?? "").trim()
 
 const levelPrefix = (level: AlertLevel): string => {
   if (level === "error") {
@@ -27,7 +27,7 @@ const normalizeDetails = (details: string[] | undefined): string[] => {
   return (details ?? []).map((entry) => entry.trim()).filter(Boolean)
 }
 
-export const sendDiscordAlert = async ({
+export const sendErrorDiscordAlert = async ({
   title,
   message,
   source,

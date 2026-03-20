@@ -23,9 +23,10 @@ import {
 import { isEntirePlace, isSingleFamilyHome } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
-import { sendDiscordAlert } from "../discord"
+import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
 import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { sendScrapeSuccessAlert } from "../success-discord"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
 
@@ -170,7 +171,7 @@ const loadListResultsWithRetries = async (
     if (!botProtectionDetected) {
       botProtectionDetected = true
 
-      await sendDiscordAlert({
+      await sendErrorDiscordAlert({
         title: "Zillow challenge detected",
         message: "Zillow returned a bot-protection or captcha page.",
         source: "zillow",
@@ -235,7 +236,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
         `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
       )
 
-      await sendDiscordAlert({
+      await sendErrorDiscordAlert({
         title: "Zillow scrape produced no payload",
         message: "No listing payload was extracted after configured retries.",
         source: "zillow",
@@ -285,9 +286,18 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     const scrapedSuccessfully = deduped.length > 0
     const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
 
-    await persistToMongo(outputPayload)
+    const persistence = await persistToMongo(outputPayload)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
     console.log(`Zillow JSON export written: ${outputPath}`)
+
+    await sendScrapeSuccessAlert({
+      source: "zillow",
+      city: cityTarget.label,
+      scrapedAt: outputPayload.scrapedAt,
+      count: deduped.length,
+      scrapedSuccessfully,
+      persistence,
+    })
 
     console.table(
       deduped.map((listing) => ({

@@ -24,9 +24,10 @@ import { isEntirePlace, isSingleFamilyHome, matchesTargetCity } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { mapRentalListing } from "./parser"
-import { sendDiscordAlert } from "../discord"
+import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
 import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { sendScrapeSuccessAlert } from "../success-discord"
 import type { ApartmentsRawListing } from "./types"
 
 loadEnv({ path: ROOT_ENV_PATH })
@@ -236,7 +237,7 @@ const loadPageWithRetries = async (
       if (!botProtectionDetected) {
         botProtectionDetected = true
 
-        await sendDiscordAlert({
+        await sendErrorDiscordAlert({
           title: "Apartments.com challenge detected",
           message: "Apartments.com returned a bot-protection or access-denied page.",
           source: "apartments.com",
@@ -404,7 +405,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
         html,
       })
 
-      await sendDiscordAlert({
+      await sendErrorDiscordAlert({
         title: "Apartments.com scrape produced no payload",
         message: "No Apartments.com listing payload was extracted after configured retries.",
         source: "apartments.com",
@@ -480,10 +481,19 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     const scrapedSuccessfully = deduped.length > 0
     const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
 
-    await persistToMongo(outputPayload)
+    const persistence = await persistToMongo(outputPayload)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
 
     console.log(`Wrote Apartments.com output to ${outputPath}`)
+    await sendScrapeSuccessAlert({
+      source: "apartments.com",
+      city: cityTarget.label,
+      scrapedAt: outputPayload.scrapedAt,
+      count: deduped.length,
+      scrapedSuccessfully,
+      persistence,
+    })
+
     console.table(
       deduped.map((listing) => ({
         address: listing.address,

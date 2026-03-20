@@ -69,12 +69,6 @@ export const CITY_TARGETS: CityTarget[] = [
     requiredLocationKeywords: ["daly city"],
   },
   {
-    key: "san-mateo",
-    label: "San Mateo, CA",
-    url: buildApartmentsUrl("san-mateo-ca"),
-    requiredLocationKeywords: ["san mateo"],
-  },
-  {
     key: "south-san-francisco",
     label: "South San Francisco, CA",
     url: buildApartmentsUrl("south-san-francisco-ca"),
@@ -85,5 +79,17 @@ export const CITY_TARGETS: CityTarget[] = [
     label: "Pacifica, CA",
     url: buildApartmentsUrl("pacifica-ca"),
     requiredLocationKeywords: ["pacifica"],
+  },
+  {
+    key: "san-bruno",
+    label: "San Bruno, CA",
+    url: buildApartmentsUrl("san-bruno-ca"),
+    requiredLocationKeywords: ["san bruno"],
+  },
+  {
+    key: "brisbane",
+    label: "Brisbane, CA",
+    url: buildApartmentsUrl("brisbane-ca"),
+    requiredLocationKeywords: ["brisbane"],
   },
 ]

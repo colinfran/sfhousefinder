@@ -71,7 +71,7 @@ To run a single source + single city:
 ```bash
 npm --workspace services/scraper run start -- --source craigslist --city san-francisco
 # source: zillow | craigslist | apartments
-# city: san-francisco | daly-city | san-mateo | south-san-francisco | pacifica
+# city: san-francisco | daly-city | south-san-francisco | pacifica | san-bruno | brisbane
 ```
 
 Results are written to separate MongoDB collections (`zillow`, `craigslist`, and `apartments.com`) and also exported as JSON to `services/scraper/output/`.
@@ -83,13 +83,13 @@ The scraper uses `puppeteer-extra` with the stealth plugin and randomised browse
 | Variable | Default | Description |
 |---|---|---|
 | `ZILLOW_MAX_ATTEMPTS` | `3` | Retry attempts if a challenge page is detected |
-| `ZILLOW_RETRY_BASE_DELAY_MS` | `7000` | Base delay between retries (ms) |
-| `ZILLOW_PRE_NAV_MIN_DELAY_MS` | `2000` | Min random delay before each navigation (ms) |
-| `ZILLOW_PRE_NAV_MAX_DELAY_MS` | `5000` | Max random delay before each navigation (ms) |
+| `ZILLOW_RETRY_BASE_DELAY_MS` | `20000` | Base delay between retries (ms) |
+| `ZILLOW_PRE_NAV_MIN_DELAY_MS` | `10000` | Min random delay before each navigation (ms) |
+| `ZILLOW_PRE_NAV_MAX_DELAY_MS` | `30000` | Max random delay before each navigation (ms) |
 | `ZILLOW_NAV_TIMEOUT_MS` | `90000` | Page navigation timeout (ms) |
 | `ZILLOW_NEXT_DATA_TIMEOUT_MS` | `20000` | Timeout waiting for `__NEXT_DATA__` script (ms) |
-| `ZILLOW_CITY_COOLDOWN_MIN_MS` | `60000` | Min delay between cities in `--all-cities` mode (ms) |
-| `ZILLOW_CITY_COOLDOWN_MAX_MS` | `180000` | Max delay between cities in `--all-cities` mode (ms) |
+| `ZILLOW_CITY_COOLDOWN_MIN_MS` | `180000` | Min delay between cities in `--all-cities` mode (ms) |
+| `ZILLOW_CITY_COOLDOWN_MAX_MS` | `600000` | Max delay between cities in `--all-cities` mode (ms) |
 
 Craigslist scraper timing can be tuned with:
 
@@ -97,23 +97,23 @@ Craigslist scraper timing can be tuned with:
 |---|---|---|
 | `CRAIGSLIST_NAV_TIMEOUT_MS` | `60000` | Page navigation timeout (ms) |
 | `CRAIGSLIST_LISTINGS_TIMEOUT_MS` | `15000` | Timeout waiting for search result rows (ms) |
-| `CRAIGSLIST_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
-| `CRAIGSLIST_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
+| `CRAIGSLIST_CITY_COOLDOWN_MIN_MS` | `120000` | Min delay between cities in `--all-cities` mode (ms) |
+| `CRAIGSLIST_CITY_COOLDOWN_MAX_MS` | `300000` | Max delay between cities in `--all-cities` mode (ms) |
 
 Apartments.com scraper timing can be tuned with:
 
 | Variable | Default | Description |
 |---|---|---|
 | `APARTMENTS_NAV_TIMEOUT_MS` | `90000` | Page navigation timeout (ms) |
-| `APARTMENTS_LISTINGS_TIMEOUT_MS` | `20000` | Timeout waiting for search result rows (ms) |
-| `APARTMENTS_CITY_COOLDOWN_MIN_MS` | `30000` | Min delay between cities in `--all-cities` mode (ms) |
-| `APARTMENTS_CITY_COOLDOWN_MAX_MS` | `90000` | Max delay between cities in `--all-cities` mode (ms) |
+| `APARTMENTS_LISTINGS_TIMEOUT_MS` | `45000` | Timeout waiting for search result rows (ms) |
+| `APARTMENTS_CITY_COOLDOWN_MIN_MS` | `180000` | Min delay between cities in `--all-cities` mode (ms) |
+| `APARTMENTS_CITY_COOLDOWN_MAX_MS` | `600000` | Max delay between cities in `--all-cities` mode (ms) |
 
 ## Default scrape filters
 
 Across all three scrapers:
 
-- **Cities**: San Francisco, Daly City, San Mateo, South San Francisco, Pacifica
+- **Cities**: San Francisco, Daly City, South San Francisco, Pacifica, San Bruno, Brisbane
 - **Price range**: $3,000–$4,500/month
 - **Minimum bedrooms**: 2
 - **Target inventory**: single-family, entire-place rentals

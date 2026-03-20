@@ -142,12 +142,6 @@ export const CITY_TARGETS: CityTarget[] = [
     requiredLocationKeywords: ["daly city"],
   },
   {
-    key: "san-mateo",
-    label: "San Mateo, CA",
-    searchUrl: buildCraigslistUrl("/search/pen/house-for-rent", "san mateo"),
-    requiredLocationKeywords: ["san mateo"],
-  },
-  {
     key: "south-san-francisco",
     label: "South San Francisco, CA",
     searchUrl: buildCraigslistUrl("/search/pen/house-for-rent", "south san francisco"),
@@ -158,6 +152,18 @@ export const CITY_TARGETS: CityTarget[] = [
     label: "Pacifica, CA",
     searchUrl: buildCraigslistUrl("/search/pen/house-for-rent", "pacifica"),
     requiredLocationKeywords: ["pacifica"],
+  },
+  {
+    key: "san-bruno",
+    label: "San Bruno, CA",
+    searchUrl: buildCraigslistUrl("/search/pen/house-for-rent", "san bruno"),
+    requiredLocationKeywords: ["san bruno"],
+  },
+  {
+    key: "brisbane",
+    label: "Brisbane, CA",
+    searchUrl: buildCraigslistUrl("/search/pen/house-for-rent", "brisbane"),
+    requiredLocationKeywords: ["brisbane"],
   },
 ]
 

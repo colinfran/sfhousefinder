@@ -56,8 +56,11 @@ export const sendScrapeSuccessAlert = async ({
   }
 
   const level: AlertLevel = scrapedSuccessfully ? "info" : "warning"
+  const headline = scrapedSuccessfully
+    ? `${source} scrape succeeded`
+    : `${source} scrape completed with warnings`
   const lines = [
-    `${levelPrefix(level)} **${`${source} scrape succeeded`.trim()}**`,
+    `${levelPrefix(level)} **${headline.trim()}**`,
     (scrapedSuccessfully
       ? "Scrape completed and persistence summary is below."
       : "Scrape finished without a complete result set; persistence summary is below."

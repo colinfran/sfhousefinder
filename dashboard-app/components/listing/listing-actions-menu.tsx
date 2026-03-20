@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -168,9 +167,6 @@ const ListingActionsMenu = ({ listing }: ListingActionsMenuProps): JSX.Element =
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{listing.notes ? "Edit Notes" : "Add Notes"}</DialogTitle>
-            <DialogDescription>
-              Save private notes for this listing so they show up in the dashboard.
-            </DialogDescription>
           </DialogHeader>
 
           <Textarea

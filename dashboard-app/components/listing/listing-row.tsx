@@ -73,6 +73,10 @@ const ListingRow = ({ listing }: ListingRowProps): JSX.Element => {
             ) : null}
             <Badge variant="outline">{formatHomeType(listing.homeType)}</Badge>
           </div>
+
+          {listing.notes ? (
+            <p className="line-clamp-2 pt-1 text-xs text-muted-foreground">{listing.notes}</p>
+          ) : null}
         </div>
       </div>
 

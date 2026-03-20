@@ -30,6 +30,7 @@ type ListingDocument = {
   title?: string
   location?: string
   notRelevant?: boolean
+  notes?: string
   url?: string
 }
 
@@ -56,6 +57,7 @@ export type DashboardListing = {
   title: string | null
   location: string | null
   notRelevant: boolean
+  notes: string | null
   url: string
 }
 
@@ -150,6 +152,7 @@ const toDisplayListing = (document: ListingDocument): DashboardListing => ({
   title: document.title ?? null,
   location: document.location ?? null,
   notRelevant: document.notRelevant ?? false,
+  notes: document.notes?.trim() || null,
   url: document.url ?? "#",
 })
 

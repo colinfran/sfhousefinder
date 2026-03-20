@@ -10,3 +10,4 @@ dashboard-app/out
 services/scraper/dist
 dashboard-app/next-env.d.ts
 dashboard-app/tsconfig.tsbuildinfo
+chrome-extension/*

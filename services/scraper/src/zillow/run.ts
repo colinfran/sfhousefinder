@@ -25,6 +25,7 @@ import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendDiscordAlert } from "../discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
+import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
 
@@ -192,9 +193,10 @@ const loadListResultsWithRetries = async (
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
   const executablePath = resolveExecutablePath()
+  const proxyConfig = parseProxyConfig(PROXY_SERVER)
 
-  if (PROXY_SERVER) {
-    browserLaunchArgs.push(`--proxy-server=${PROXY_SERVER}`)
+  if (proxyConfig) {
+    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
   }
 
   const browser = await puppeteer.launch({
@@ -206,6 +208,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   try {
     const page = await browser.newPage()
 
+    await applyProxyAuthentication(page, proxyConfig)
     await configurePage(page)
 
     console.log(`Opening Zillow rentals search: ${cityTarget.url}`)

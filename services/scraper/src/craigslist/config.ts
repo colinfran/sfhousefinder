@@ -51,6 +51,7 @@ export const POST_FILTER_WAIT_TIMEOUT_MS = parseNumberEnv(
   process.env.CRAIGSLIST_POST_FILTER_WAIT_TIMEOUT_MS,
   10000,
 )
+export const PROXY_SERVER = process.env.SCRAPER_PROXY_SERVER ?? ""
 
 const buildCraigslistUrl = (path: string, query?: string): string => {
   const params = new URLSearchParams({

@@ -26,6 +26,7 @@ import { persistToMongo } from "./mongo"
 import { mapRentalListing } from "./parser"
 import { sendDiscordAlert } from "../discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
+import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
 import type { ApartmentsRawListing } from "./types"
 
 loadEnv({ path: ROOT_ENV_PATH })
@@ -369,9 +370,10 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
   const executablePath = resolveExecutablePath()
+  const proxyConfig = parseProxyConfig(PROXY_SERVER)
 
-  if (PROXY_SERVER) {
-    browserLaunchArgs.push(`--proxy-server=${PROXY_SERVER}`)
+  if (proxyConfig) {
+    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
   }
 
   const browser = await puppeteer.launch({
@@ -382,6 +384,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
   try {
     const page = await browser.newPage()
+    await applyProxyAuthentication(page, proxyConfig)
     await configurePage(page)
 
     console.log(`Opening Apartments.com rentals search: ${cityTarget.url}`)

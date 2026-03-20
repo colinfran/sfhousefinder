@@ -49,7 +49,7 @@ export const CITY_COOLDOWN_MAX_MS = parseNumberEnv(
   process.env.APARTMENTS_CITY_COOLDOWN_MAX_MS,
   600000,
 )
-export const PROXY_SERVER = process.env.APARTMENTS_PROXY_SERVER ?? ""
+export const PROXY_SERVER = process.env.SCRAPER_PROXY_SERVER ?? ""
 
 const buildApartmentsUrl = (citySlug: string): string => {
   return `https://www.apartments.com/houses/${citySlug}/min-${MIN_BEDS}-bedrooms-${MIN_PRICE}-to-${MAX_PRICE}/`

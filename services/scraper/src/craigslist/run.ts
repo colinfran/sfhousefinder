@@ -12,6 +12,7 @@ import {
   MIN_PRICE,
   NAVIGATION_TIMEOUT_MS,
   POST_FILTER_WAIT_TIMEOUT_MS,
+  PROXY_SERVER,
   ROOT_ENV_PATH,
   getSearchUrlForCity,
   type CityTarget,
@@ -27,6 +28,7 @@ import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendDiscordAlert } from "../discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
+import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
 
@@ -534,15 +536,19 @@ const scrapeCityListings = async (
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
   const executablePath = resolveExecutablePath()
+  const proxyConfig = parseProxyConfig(PROXY_SERVER)
 
   const browser = await puppeteer.launch({
     headless: false,
-    args: ["--no-sandbox"],
+    args: proxyConfig
+      ? ["--no-sandbox", `--proxy-server=${proxyConfig.serverUrl}`]
+      : ["--no-sandbox"],
     executablePath,
   })
 
   try {
     const page = await browser.newPage()
+    await applyProxyAuthentication(page, proxyConfig)
 
     await page.setExtraHTTPHeaders({
       "accept-language": "en-US,en;q=0.9",

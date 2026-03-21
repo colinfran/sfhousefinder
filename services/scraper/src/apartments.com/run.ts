@@ -26,7 +26,7 @@ import { persistToMongo } from "./mongo"
 import { mapRentalListing } from "./parser"
 import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
-import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { applyProxyAuthentication, getProxyConfigForAttempt } from "../proxy"
 import { sendScrapeSuccessAlert } from "../success-discord"
 import type { ApartmentsRawListing } from "./types"
 
@@ -208,11 +208,48 @@ const isBotProtectionPage = async (page: Page): Promise<boolean> => {
   return BOT_PROTECTION_PATTERNS.some((pattern) => pattern.test(pageText))
 }
 
-const loadPageWithRetries = async (
-  page: Page,
+const createAttemptPage = async (
   cityTarget: CityTarget,
-): Promise<{ hasListings: boolean; botProtectionDetected: boolean }> => {
+  attempt: number,
+): Promise<{ browser: puppeteer.Browser; page: Page }> => {
+  const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
+  const executablePath = resolveExecutablePath()
+  const proxyConfig = getProxyConfigForAttempt(PROXY_SERVER, {
+    source: "apartments.com",
+    cityKey: cityTarget.key,
+    attempt,
+  })
+
+  if (proxyConfig) {
+    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
+  }
+
+  const browser = await puppeteer.launch({
+    headless: false,
+    args: browserLaunchArgs,
+    executablePath,
+  })
+
+  const page = await browser.newPage()
+  await applyProxyAuthentication(page, proxyConfig)
+  await configurePage(page)
+
+  return { browser, page }
+}
+
+const loadPageWithRetries = async (
+  cityTarget: CityTarget,
+): Promise<{
+  botProtectionDetected: boolean
+  hasListings: boolean
+  lastHtml: string
+  lastTitle: string
+  lastUrl: string
+}> => {
   let botProtectionDetected = false
+  let lastHtml = ""
+  let lastTitle = ""
+  let lastUrl = cityTarget.url
 
   for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
@@ -225,57 +262,58 @@ const loadPageWithRetries = async (
 
     await sleep(randomInRange(PRE_NAVIGATION_MIN_DELAY_MS, PRE_NAVIGATION_MAX_DELAY_MS))
 
-    await page.goto(cityTarget.url, {
-      waitUntil: "domcontentloaded",
-      timeout: NAVIGATION_TIMEOUT_MS,
-    })
-
-    await sleep(1200)
-
-    const wasBlocked = await isBotProtectionPage(page)
-    if (wasBlocked) {
-      if (!botProtectionDetected) {
-        botProtectionDetected = true
-
-        await sendErrorDiscordAlert({
-          title: "Apartments.com challenge detected",
-          message: "Apartments.com returned a bot-protection or access-denied page.",
-          source: "apartments.com",
-          city: cityTarget.label,
-          level: "warning",
-          details: [
-            `Attempt: ${attempt}/${MAX_SCRAPE_ATTEMPTS}`,
-            `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
-            `URL: ${cityTarget.url}`,
-          ],
-        })
-      }
-
-      console.log(`Apartments.com bot protection detected for ${cityTarget.label} on this attempt.`)
-      continue
-    }
+    const { browser, page } = await createAttemptPage(cityTarget, attempt)
 
     try {
+      await page.goto(cityTarget.url, {
+        waitUntil: "domcontentloaded",
+        timeout: NAVIGATION_TIMEOUT_MS,
+      })
+
+      await sleep(1200)
+
+      lastHtml = await page.content().catch(() => "")
+      lastTitle = await page.title().catch(() => "")
+      lastUrl = page.url()
+
+      const wasBlocked = await isBotProtectionPage(page)
+      if (wasBlocked) {
+        if (!botProtectionDetected) {
+          botProtectionDetected = true
+        }
+
+        console.log(
+          `Apartments.com bot protection detected for ${cityTarget.label} on this attempt.`,
+        )
+        continue
+      }
+
       const hasListings = await waitForListings(page)
-      return { hasListings, botProtectionDetected }
+      lastHtml = await page.content().catch(() => lastHtml)
+      lastTitle = await page.title().catch(() => lastTitle)
+      lastUrl = page.url()
+      return { hasListings, botProtectionDetected, lastHtml, lastTitle, lastUrl }
     } catch (error) {
-      const html = await page.content().catch(() => "")
-      const title = await page.title().catch(() => "")
+      lastHtml = await page.content().catch(() => lastHtml)
+      lastTitle = await page.title().catch(() => lastTitle)
+      lastUrl = page.url()
 
       await appendFailureHtmlLog({
         source: "apartments",
         city: cityTarget.label,
         reason: error instanceof Error ? error.message : "Apartments listings wait failed",
-        url: page.url(),
-        title,
-        html,
+        url: lastUrl,
+        title: lastTitle,
+        html: lastHtml,
       })
 
       throw error
+    } finally {
+      await browser.close()
     }
   }
 
-  return { hasListings: false, botProtectionDetected }
+  return { hasListings: false, botProtectionDetected, lastHtml, lastTitle, lastUrl }
 }
 
 const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
@@ -369,71 +407,70 @@ const extractRows = async (page: Page): Promise<ApartmentsRawListing[]> => {
 }
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
-  const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
-  const executablePath = resolveExecutablePath()
-  const proxyConfig = parseProxyConfig(PROXY_SERVER)
+  console.log(`Opening Apartments.com rentals search: ${cityTarget.url}`)
 
-  if (proxyConfig) {
-    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
+  const { hasListings, botProtectionDetected, lastHtml, lastTitle, lastUrl } =
+    await loadPageWithRetries(cityTarget)
+
+  if (!hasListings && botProtectionDetected) {
+    await appendFailureHtmlLog({
+      source: "apartments",
+      city: cityTarget.label,
+      reason: "No listings payload after retries with bot-protection detected",
+      url: lastUrl,
+      title: lastTitle,
+      html: lastHtml,
+    })
+
+    await sendErrorDiscordAlert({
+      title: "Apartments.com scrape produced no payload",
+      message:
+        "No Apartments.com listing payload was extracted after configured retries because bot protection persisted.",
+      source: "apartments.com",
+      city: cityTarget.label,
+      level: "warning",
+      details: [
+        `Attempts: ${MAX_SCRAPE_ATTEMPTS}`,
+        `Bot protection seen: yes`,
+        `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
+        `URL: ${lastUrl || cityTarget.url}`,
+      ],
+    })
+
+    console.log(
+      `No Apartments.com listing payload found for ${cityTarget.label} after retries. Apartments.com likely challenged this session.`,
+    )
+
+    return 0
   }
 
-  const browser = await puppeteer.launch({
-    headless: false,
-    args: browserLaunchArgs,
-    executablePath,
-  })
+  if (!hasListings) {
+    console.log(`No Apartments.com listings found for ${cityTarget.label}.`)
+
+    const outputPayload = buildOutputPayload([], cityTarget.label, true)
+    const persistence = await persistToMongo(outputPayload)
+    await writeOutputToFile(outputPayload, cityTarget.key)
+    await sendScrapeSuccessAlert({
+      source: "apartments.com",
+      city: cityTarget.label,
+      scrapedAt: outputPayload.scrapedAt,
+      count: 0,
+      scrapedSuccessfully: true,
+      persistence,
+    })
+    return 0
+  }
+
+  const { browser, page } = await createAttemptPage(cityTarget, MAX_SCRAPE_ATTEMPTS + 1)
 
   try {
-    const page = await browser.newPage()
-    await applyProxyAuthentication(page, proxyConfig)
-    await configurePage(page)
+    await page.goto(cityTarget.url, {
+      waitUntil: "domcontentloaded",
+      timeout: NAVIGATION_TIMEOUT_MS,
+    })
 
-    console.log(`Opening Apartments.com rentals search: ${cityTarget.url}`)
-
-    const { hasListings, botProtectionDetected } = await loadPageWithRetries(page, cityTarget)
-
-    if (!hasListings && botProtectionDetected) {
-      const html = await page.content().catch(() => "")
-      const title = await page.title().catch(() => "")
-
-      await appendFailureHtmlLog({
-        source: "apartments",
-        city: cityTarget.label,
-        reason: "No listings payload after retries with bot-protection detected",
-        url: page.url(),
-        title,
-        html,
-      })
-
-      await sendErrorDiscordAlert({
-        title: "Apartments.com scrape produced no payload",
-        message: "No Apartments.com listing payload was extracted after configured retries.",
-        source: "apartments.com",
-        city: cityTarget.label,
-        level: "warning",
-        details: [
-          `Attempts: ${MAX_SCRAPE_ATTEMPTS}`,
-          `Bot protection seen: yes`,
-          `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
-          `URL: ${cityTarget.url}`,
-        ],
-      })
-
-      console.log(
-        `No Apartments.com listing payload found for ${cityTarget.label} after retries. Apartments.com likely challenged this session.`,
-      )
-
-      return 0
-    }
-
-    if (!hasListings) {
-      console.log(`No Apartments.com listings found for ${cityTarget.label}.`)
-
-      const outputPayload = buildOutputPayload([], cityTarget.label, false)
-      await persistToMongo(outputPayload)
-      await writeOutputToFile(outputPayload, cityTarget.key)
-      return 0
-    }
+    await sleep(1200)
+    await waitForListings(page)
 
     const rawListings = await extractRows(page)
     console.log(
@@ -478,7 +515,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
 
-    const scrapedSuccessfully = deduped.length > 0
+    const scrapedSuccessfully = true
     const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
 
     const persistence = await persistToMongo(outputPayload)

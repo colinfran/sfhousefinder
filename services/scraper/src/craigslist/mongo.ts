@@ -108,9 +108,9 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<Persistence
       )
     } else {
       skipReason =
-        "No current Craigslist listings found; skipping deactivation since scrape was incomplete."
+        "No current Craigslist listings found; skipping deactivation to avoid clearing existing listings from an empty result set."
       console.log(
-        "No current Craigslist listings found; skipping deactivation since scrape was incomplete.",
+        "No current Craigslist listings found; skipping deactivation to avoid clearing existing listings from an empty result set.",
       )
       console.log(
         `MongoDB craigslist upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,

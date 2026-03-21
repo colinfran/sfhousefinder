@@ -176,9 +176,9 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<Persistence
       )
     } else {
       skipReason =
-        "No current Apartments.com listings found; skipping deactivation since scrape was incomplete."
+        "No current Apartments.com listings found; skipping deactivation to avoid clearing existing listings from an empty result set."
       console.log(
-        "No current Apartments.com listings found; skipping deactivation since scrape was incomplete.",
+        "No current Apartments.com listings found; skipping deactivation to avoid clearing existing listings from an empty result set.",
       )
       console.log(
         `MongoDB apartments.com upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,

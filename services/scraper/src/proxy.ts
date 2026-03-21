@@ -6,6 +6,12 @@ export type ProxyConfig = {
   username: string | null
 }
 
+type ProxySessionContext = {
+  attempt: number
+  cityKey: string
+  source: string
+}
+
 const normalizeString = (value: string | undefined): string => {
   return value?.trim() ?? ""
 }
@@ -32,6 +38,13 @@ export const parseProxyConfig = (rawValue: string | undefined): ProxyConfig | nu
     username,
     password,
   }
+}
+
+export const getProxyConfigForAttempt = (
+  rawValue: string | undefined,
+  _context: ProxySessionContext,
+): ProxyConfig | null => {
+  return parseProxyConfig(rawValue)
 }
 
 export const applyProxyAuthentication = async (

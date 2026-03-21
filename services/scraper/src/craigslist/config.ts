@@ -39,6 +39,16 @@ export const LISTINGS_WAIT_TIMEOUT_MS = parseNumberEnv(
   process.env.CRAIGSLIST_LISTINGS_TIMEOUT_MS,
   15000,
 )
+export const MAX_SCRAPE_ATTEMPTS = parseNumberEnv(process.env.CRAIGSLIST_MAX_ATTEMPTS, 3)
+export const PRE_NAVIGATION_MIN_DELAY_MS = parseNumberEnv(
+  process.env.CRAIGSLIST_PRE_NAV_MIN_DELAY_MS,
+  10000,
+)
+export const PRE_NAVIGATION_MAX_DELAY_MS = parseNumberEnv(
+  process.env.CRAIGSLIST_PRE_NAV_MAX_DELAY_MS,
+  30000,
+)
+export const RETRY_BASE_DELAY_MS = parseNumberEnv(process.env.CRAIGSLIST_RETRY_BASE_DELAY_MS, 20000)
 export const CITY_COOLDOWN_MIN_MS = parseNumberEnv(
   process.env.CRAIGSLIST_CITY_COOLDOWN_MIN_MS,
   120000,

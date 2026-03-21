@@ -55,15 +55,19 @@ export const sendScrapeSuccessAlert = async ({
     detailLines.push(`Mongo note: ${persistence.skipReason}`)
   }
 
-  const level: AlertLevel = scrapedSuccessfully ? "info" : "warning"
-  const headline = scrapedSuccessfully
-    ? `${source} scrape succeeded`
-    : `${source} scrape completed with warnings`
+  const completedWithWarnings = scrapedSuccessfully && count === 0
+  const level: AlertLevel = scrapedSuccessfully && !completedWithWarnings ? "info" : "warning"
+  const headline =
+    scrapedSuccessfully && !completedWithWarnings
+      ? `${source} scrape succeeded`
+      : `${source} scrape completed with warnings`
   const lines = [
     `${levelPrefix(level)} **${headline.trim()}**`,
-    (scrapedSuccessfully
+    (scrapedSuccessfully && !completedWithWarnings
       ? "Scrape completed and persistence summary is below."
-      : "Scrape finished without a complete result set; persistence summary is below."
+      : scrapedSuccessfully
+        ? "Scrape completed successfully but 0 listings matched filters; persistence summary is below."
+        : "Scrape finished without a complete result set; persistence summary is below."
     ).trim(),
     source ? `Source: ${source}` : "",
     city ? `City: ${city}` : "",

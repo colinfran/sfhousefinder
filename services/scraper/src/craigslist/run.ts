@@ -8,11 +8,15 @@ import {
   CITY_TARGETS,
   LISTINGS_WAIT_TIMEOUT_MS,
   MAX_PRICE,
+  MAX_SCRAPE_ATTEMPTS,
   MIN_BEDS,
   MIN_PRICE,
   NAVIGATION_TIMEOUT_MS,
   POST_FILTER_WAIT_TIMEOUT_MS,
+  PRE_NAVIGATION_MAX_DELAY_MS,
+  PRE_NAVIGATION_MIN_DELAY_MS,
   PROXY_SERVER,
+  RETRY_BASE_DELAY_MS,
   ROOT_ENV_PATH,
   getSearchUrlForCity,
   type CityTarget,
@@ -28,7 +32,7 @@ import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
-import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { applyProxyAuthentication, getProxyConfigForAttempt } from "../proxy"
 import { sendScrapeSuccessAlert } from "../success-discord"
 import { mapRentalListing } from "./parser"
 import type { CraigslistRawListing } from "./types"
@@ -456,7 +460,7 @@ const extractRows = async (page: Page): Promise<CraigslistRawListing[]> => {
 const scrapeCityListings = async (
   page: Page,
   cityTarget: CityTarget,
-): Promise<CraigslistRawListing[]> => {
+): Promise<{ blocked: boolean; listings: CraigslistRawListing[] }> => {
   const searchUrl = getSearchUrlForCity(cityTarget)
 
   console.log(`Opening Craigslist rentals search: ${searchUrl}`)
@@ -465,17 +469,6 @@ const scrapeCityListings = async (
     waitUntil: "domcontentloaded",
     timeout: NAVIGATION_TIMEOUT_MS,
   })
-
-  if (await isBotProtectionPage(page)) {
-    await sendErrorDiscordAlert({
-      title: "Craigslist challenge detected",
-      message: "Craigslist returned a bot-protection or captcha page.",
-      source: "craigslist",
-      city: cityTarget.label,
-      level: "warning",
-      details: [`URL: ${searchUrl}`],
-    })
-  }
 
   await applyNeighborhoodFilters(page, cityTarget)
 
@@ -516,28 +509,28 @@ const scrapeCityListings = async (
         html,
       })
 
-      await sendErrorDiscordAlert({
-        title: "Craigslist scrape blocked",
-        message: "No listings found because the page appears to be bot-protected.",
-        source: "craigslist",
-        city: cityTarget.label,
-        level: "warning",
-        details: [`URL: ${searchUrl}`],
-      })
+      return { blocked: true, listings: [] }
     }
 
     console.log(`No Craigslist listings found for ${cityTarget.label}.`)
-    return []
+    return { blocked: false, listings: [] }
   }
 
   await scrollToLoadLazyContent(page)
 
-  return extractRows(page)
+  return { blocked: false, listings: await extractRows(page) }
 }
 
-const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
+const createAttemptPage = async (
+  cityTarget: CityTarget,
+  attempt: number,
+): Promise<{ browser: puppeteer.Browser; page: Page }> => {
   const executablePath = resolveExecutablePath()
-  const proxyConfig = parseProxyConfig(PROXY_SERVER)
+  const proxyConfig = getProxyConfigForAttempt(PROXY_SERVER, {
+    source: "craigslist",
+    cityKey: cityTarget.key,
+    attempt,
+  })
 
   const browser = await puppeteer.launch({
     headless: false,
@@ -547,15 +540,166 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
     executablePath,
   })
 
-  try {
-    const page = await browser.newPage()
-    await applyProxyAuthentication(page, proxyConfig)
+  const page = await browser.newPage()
+  await applyProxyAuthentication(page, proxyConfig)
 
-    await page.setExtraHTTPHeaders({
-      "accept-language": "en-US,en;q=0.9",
+  await page.setExtraHTTPHeaders({
+    "accept-language": "en-US,en;q=0.9",
+  })
+
+  return { browser, page }
+}
+
+const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
+  let lastHtml = ""
+  let lastTitle = ""
+  let lastUrl = getSearchUrlForCity(cityTarget)
+  let botProtectionDetected = false
+
+  for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) {
+      const backoff = RETRY_BASE_DELAY_MS * attempt + randomInRange(1000, 4000)
+      console.log(
+        `Retrying ${cityTarget.label} in ${backoff}ms (attempt ${attempt}/${MAX_SCRAPE_ATTEMPTS})...`,
+      )
+      await sleep(backoff)
+    }
+
+    await sleep(randomInRange(PRE_NAVIGATION_MIN_DELAY_MS, PRE_NAVIGATION_MAX_DELAY_MS))
+
+    const { browser, page } = await createAttemptPage(cityTarget, attempt)
+
+    try {
+      const scrapeResult = await scrapeCityListings(page, cityTarget)
+      lastHtml = await page.content().catch(() => "")
+      lastTitle = await page.title().catch(() => "")
+      lastUrl = page.url()
+
+      if (scrapeResult.blocked) {
+        botProtectionDetected = true
+
+        if (attempt === MAX_SCRAPE_ATTEMPTS) {
+          await sendErrorDiscordAlert({
+            title: "Craigslist scrape blocked",
+            message: "No listings found because the page appears to be bot-protected.",
+            source: "craigslist",
+            city: cityTarget.label,
+            level: "warning",
+            details: [
+              `Attempt: ${attempt}/${MAX_SCRAPE_ATTEMPTS}`,
+              `URL: ${lastUrl || getSearchUrlForCity(cityTarget)}`,
+            ],
+          })
+        }
+
+        continue
+      }
+
+      const rawListings = scrapeResult.listings
+
+      const rentals = rawListings
+        .map((raw) => ({
+          raw,
+          mapped: mapRentalListing(raw),
+        }))
+        .filter(({ mapped, raw }) => {
+          if (mapped.price === null || mapped.beds === null || !mapped.url) {
+            return false
+          }
+
+          if (mapped.price < MIN_PRICE || mapped.price > MAX_PRICE || mapped.beds < MIN_BEDS) {
+            return false
+          }
+
+          if (!isSingleFamilyHome(raw, mapped)) {
+            return false
+          }
+
+          if (!isEntirePlace(raw)) {
+            return false
+          }
+
+          if (!isAllowedListingCategory(raw)) {
+            console.log(`  Skipping unsupported category listing: "${raw.title}" url="${raw.url}"`)
+            return false
+          }
+
+          if (!isInAllowedNeighborhood(raw, cityTarget)) {
+            console.log(`  Skipping out-of-area listing: "${raw.title}" hood="${raw.hoodText}"`)
+            return false
+          }
+
+          if (!matchesTargetCity(raw, cityTarget)) {
+            console.log(
+              `  Skipping city mismatch listing: "${raw.title}" hood="${raw.hoodText}" url="${raw.url}"`,
+            )
+            return false
+          }
+
+          return true
+        })
+        .map(({ mapped }) => mapped)
+
+      const deduped = Array.from(new Map(rentals.map((listing) => [listing.id, listing])).values())
+
+      console.log(
+        `Found ${deduped.length} ${cityTarget.label} Craigslist rentals matching filters.`,
+      )
+
+      const scrapedSuccessfully = true
+      const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
+      const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
+      console.log(`Craigslist JSON export written: ${outputPath}`)
+
+      const persistence = await persistToMongo(outputPayload)
+
+      await sendScrapeSuccessAlert({
+        source: "craigslist",
+        city: cityTarget.label,
+        scrapedAt: outputPayload.scrapedAt,
+        count: deduped.length,
+        scrapedSuccessfully,
+        persistence,
+      })
+
+      console.table(
+        deduped.map((listing) => ({
+          title: listing.title,
+          price: listing.price,
+          beds: listing.beds,
+          baths: listing.baths,
+          url: listing.url,
+          googleMapsUrl: listing.googleMapsUrl,
+          homeType: listing.homeType,
+          homeStatus: listing.homeStatus,
+          primaryImageUrl: listing.primaryImageUrl,
+        })),
+      )
+
+      return deduped.length
+    } finally {
+      await browser.close()
+    }
+  }
+
+  if (botProtectionDetected) {
+    await appendFailureHtmlLog({
+      source: "craigslist",
+      city: cityTarget.label,
+      reason: "No listings found and bot-protection page detected",
+      url: lastUrl,
+      title: lastTitle,
+      html: lastHtml,
     })
 
-    const rawListings = await scrapeCityListings(page, cityTarget)
+    return 0
+  }
+
+  const { browser, page } = await createAttemptPage(cityTarget, MAX_SCRAPE_ATTEMPTS + 1)
+
+  try {
+    const scrapeResult = await scrapeCityListings(page, cityTarget)
+    const rawListings = scrapeResult.listings
 
     const rentals = rawListings
       .map((raw) => ({
@@ -604,7 +748,7 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
 
     console.log(`Found ${deduped.length} ${cityTarget.label} Craigslist rentals matching filters.`)
 
-    const scrapedSuccessfully = deduped.length > 0
+    const scrapedSuccessfully = true
     const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
     const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
     console.log(`Craigslist JSON export written: ${outputPath}`)

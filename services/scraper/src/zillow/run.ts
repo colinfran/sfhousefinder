@@ -25,7 +25,7 @@ import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendErrorDiscordAlert } from "../error-discord"
 import { appendFailureHtmlLog } from "../failure-html-log"
-import { applyProxyAuthentication, parseProxyConfig } from "../proxy"
+import { applyProxyAuthentication, getProxyConfigForAttempt } from "../proxy"
 import { sendScrapeSuccessAlert } from "../success-discord"
 import { extractListResults, mapRentalListing } from "./parser"
 import type { ZillowListResult } from "./types"
@@ -128,11 +128,48 @@ const isBotProtectionPage = async (page: Page): Promise<boolean> => {
   return BOT_PROTECTION_PATTERNS.some((pattern) => pattern.test(pageText))
 }
 
-const loadListResultsWithRetries = async (
-  page: Page,
+const createAttemptPage = async (
   cityTarget: CityTarget,
-): Promise<{ listResults: ZillowListResult[]; botProtectionDetected: boolean }> => {
+  attempt: number,
+): Promise<{ browser: puppeteer.Browser; page: Page }> => {
+  const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
+  const executablePath = resolveExecutablePath()
+  const proxyConfig = getProxyConfigForAttempt(PROXY_SERVER, {
+    source: "zillow",
+    cityKey: cityTarget.key,
+    attempt,
+  })
+
+  if (proxyConfig) {
+    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
+  }
+
+  const browser = await puppeteer.launch({
+    headless: false,
+    args: browserLaunchArgs,
+    executablePath,
+  })
+
+  const page = await browser.newPage()
+  await applyProxyAuthentication(page, proxyConfig)
+  await configurePage(page)
+
+  return { browser, page }
+}
+
+const loadListResultsWithRetries = async (
+  cityTarget: CityTarget,
+): Promise<{
+  botProtectionDetected: boolean
+  lastHtml: string
+  lastTitle: string
+  lastUrl: string
+  listResults: ZillowListResult[]
+}> => {
   let botProtectionDetected = false
+  let lastHtml = ""
+  let lastTitle = ""
+  let lastUrl = cityTarget.url
 
   for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
@@ -145,185 +182,154 @@ const loadListResultsWithRetries = async (
 
     await sleep(randomInRange(PRE_NAVIGATION_MIN_DELAY_MS, PRE_NAVIGATION_MAX_DELAY_MS))
 
-    await page.goto(cityTarget.url, {
-      waitUntil: "domcontentloaded",
-      timeout: NAVIGATION_TIMEOUT_MS,
-    })
+    const { browser, page } = await createAttemptPage(cityTarget, attempt)
 
     try {
-      await page.waitForSelector("script#__NEXT_DATA__", { timeout: NEXT_DATA_TIMEOUT_MS })
-    } catch {
-      console.log("__NEXT_DATA__ script not found within timeout for this attempt.")
-    }
-
-    const html = await page.content()
-    const listResults = extractListResults(html)
-
-    if (listResults.length > 0) {
-      return { listResults, botProtectionDetected }
-    }
-
-    const wasBlocked = await isBotProtectionPage(page)
-    if (!wasBlocked) {
-      break
-    }
-
-    if (!botProtectionDetected) {
-      botProtectionDetected = true
-
-      await sendErrorDiscordAlert({
-        title: "Zillow challenge detected",
-        message: "Zillow returned a bot-protection or captcha page.",
-        source: "zillow",
-        city: cityTarget.label,
-        level: "warning",
-        details: [
-          `Attempt: ${attempt}/${MAX_SCRAPE_ATTEMPTS}`,
-          `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
-          `URL: ${cityTarget.url}`,
-        ],
+      await page.goto(cityTarget.url, {
+        waitUntil: "domcontentloaded",
+        timeout: NAVIGATION_TIMEOUT_MS,
       })
-    }
 
-    console.log(`Zillow bot protection detected for ${cityTarget.label} on this attempt.`)
+      try {
+        await page.waitForSelector("script#__NEXT_DATA__", { timeout: NEXT_DATA_TIMEOUT_MS })
+      } catch {
+        console.log("__NEXT_DATA__ script not found within timeout for this attempt.")
+      }
+
+      lastHtml = await page.content().catch(() => "")
+      lastTitle = await page.title().catch(() => "")
+      lastUrl = page.url()
+
+      const listResults = extractListResults(lastHtml)
+
+      if (listResults.length > 0) {
+        return { listResults, botProtectionDetected, lastHtml, lastTitle, lastUrl }
+      }
+
+      const wasBlocked = await isBotProtectionPage(page)
+      if (!wasBlocked) {
+        break
+      }
+
+      if (!botProtectionDetected) {
+        botProtectionDetected = true
+      }
+
+      console.log(`Zillow bot protection detected for ${cityTarget.label} on this attempt.`)
+    } finally {
+      await browser.close()
+    }
   }
 
-  return { listResults: [], botProtectionDetected }
+  return { listResults: [], botProtectionDetected, lastHtml, lastTitle, lastUrl }
 }
 
 const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
-  const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
-  const executablePath = resolveExecutablePath()
-  const proxyConfig = parseProxyConfig(PROXY_SERVER)
+  console.log(`Opening Zillow rentals search: ${cityTarget.url}`)
 
-  if (proxyConfig) {
-    browserLaunchArgs.push(`--proxy-server=${proxyConfig.serverUrl}`)
-  }
+  const { listResults, botProtectionDetected, lastHtml, lastTitle, lastUrl } =
+    await loadListResultsWithRetries(cityTarget)
 
-  const browser = await puppeteer.launch({
-    headless: false,
-    args: browserLaunchArgs,
-    executablePath,
-  })
+  if (!listResults.length) {
+    await appendFailureHtmlLog({
+      source: "zillow",
+      city: cityTarget.label,
+      reason: "No listings payload extracted after retries",
+      url: lastUrl,
+      title: lastTitle,
+      html: lastHtml,
+    })
 
-  try {
-    const page = await browser.newPage()
-
-    await applyProxyAuthentication(page, proxyConfig)
-    await configurePage(page)
-
-    console.log(`Opening Zillow rentals search: ${cityTarget.url}`)
-
-    const { listResults, botProtectionDetected } = await loadListResultsWithRetries(
-      page,
-      cityTarget,
+    console.log(
+      `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
     )
 
-    if (!listResults.length) {
-      const html = await page.content().catch(() => "")
-      const title = await page.title().catch(() => "")
-
-      await appendFailureHtmlLog({
-        source: "zillow",
-        city: cityTarget.label,
-        reason: "No listings payload extracted after retries",
-        url: page.url(),
-        title,
-        html,
-      })
-
-      console.log(
-        `No listing payload found for ${cityTarget.label} after retries. Zillow likely challenged this session or changed page structure.`,
-      )
-
+    if (botProtectionDetected) {
       await sendErrorDiscordAlert({
         title: "Zillow scrape produced no payload",
-        message: "No listing payload was extracted after configured retries.",
+        message:
+          "No listing payload was extracted after configured retries because bot protection persisted.",
         source: "zillow",
         city: cityTarget.label,
         level: "warning",
         details: [
           `Attempts: ${MAX_SCRAPE_ATTEMPTS}`,
-          `Bot protection seen: ${botProtectionDetected ? "yes" : "no"}`,
+          `Bot protection seen: yes`,
           `Proxy configured: ${PROXY_SERVER ? "yes" : "no"}`,
-          `URL: ${cityTarget.url}`,
+          `URL: ${lastUrl || cityTarget.url}`,
         ],
       })
-
-      return 0
     }
 
-    const cityMatchedResults = listResults.filter((listing) =>
-      matchesTargetCity(listing, cityTarget),
-    )
-    console.log(
-      `${cityMatchedResults.length} Zillow listings matched ${cityTarget.label} location filters.`,
-    )
-
-    const rentals = cityMatchedResults
-      .map((listing) => ({
-        listing,
-        mapped: mapRentalListing(listing),
-      }))
-      .filter(({ mapped, listing }) => {
-        if (mapped.price === null || mapped.beds === null) {
-          return false
-        }
-
-        if (mapped.price < MIN_PRICE || mapped.price > MAX_PRICE || mapped.beds < MIN_BEDS) {
-          return false
-        }
-
-        if (!isSingleFamilyHome(listing, mapped)) {
-          return false
-        }
-
-        if (!isEntirePlace(mapped)) {
-          return false
-        }
-
-        return true
-      })
-      .map(({ mapped }) => mapped)
-
-    const deduped = Array.from(new Map(rentals.map((listing) => [listing.id, listing])).values())
-
-    console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
-
-    const scrapedSuccessfully = deduped.length > 0
-    const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
-
-    const persistence = await persistToMongo(outputPayload)
-    const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
-    console.log(`Zillow JSON export written: ${outputPath}`)
-
-    await sendScrapeSuccessAlert({
-      source: "zillow",
-      city: cityTarget.label,
-      scrapedAt: outputPayload.scrapedAt,
-      count: deduped.length,
-      scrapedSuccessfully,
-      persistence,
-    })
-
-    console.table(
-      deduped.map((listing) => ({
-        address: listing.address,
-        price: listing.price,
-        beds: listing.beds,
-        baths: listing.baths,
-        url: listing.url,
-        googleMapsUrl: listing.googleMapsUrl,
-        homeType: listing.homeType,
-        homeStatus: listing.homeStatus,
-        primaryImageUrl: listing.primaryImageUrl,
-      })),
-    )
-
-    return deduped.length
-  } finally {
-    await browser.close()
+    return 0
   }
+
+  const cityMatchedResults = listResults.filter((listing) => matchesTargetCity(listing, cityTarget))
+  console.log(
+    `${cityMatchedResults.length} Zillow listings matched ${cityTarget.label} location filters.`,
+  )
+
+  const rentals = cityMatchedResults
+    .map((listing) => ({
+      listing,
+      mapped: mapRentalListing(listing),
+    }))
+    .filter(({ mapped, listing }) => {
+      if (mapped.price === null || mapped.beds === null) {
+        return false
+      }
+
+      if (mapped.price < MIN_PRICE || mapped.price > MAX_PRICE || mapped.beds < MIN_BEDS) {
+        return false
+      }
+
+      if (!isSingleFamilyHome(listing, mapped)) {
+        return false
+      }
+
+      if (!isEntirePlace(mapped)) {
+        return false
+      }
+
+      return true
+    })
+    .map(({ mapped }) => mapped)
+
+  const deduped = Array.from(new Map(rentals.map((listing) => [listing.id, listing])).values())
+
+  console.log(`Found ${deduped.length} ${cityTarget.label} rentals matching filters.`)
+
+  const scrapedSuccessfully = true
+  const outputPayload = buildOutputPayload(deduped, cityTarget.label, scrapedSuccessfully)
+
+  const persistence = await persistToMongo(outputPayload)
+  const outputPath = await writeOutputToFile(outputPayload, cityTarget.key)
+  console.log(`Zillow JSON export written: ${outputPath}`)
+
+  await sendScrapeSuccessAlert({
+    source: "zillow",
+    city: cityTarget.label,
+    scrapedAt: outputPayload.scrapedAt,
+    count: deduped.length,
+    scrapedSuccessfully,
+    persistence,
+  })
+
+  console.table(
+    deduped.map((listing) => ({
+      address: listing.address,
+      price: listing.price,
+      beds: listing.beds,
+      baths: listing.baths,
+      url: listing.url,
+      googleMapsUrl: listing.googleMapsUrl,
+      homeType: listing.homeType,
+      homeStatus: listing.homeStatus,
+      primaryImageUrl: listing.primaryImageUrl,
+    })),
+  )
+
+  return deduped.length
 }
 
 export const runZillowScraper = async (): Promise<void> => {

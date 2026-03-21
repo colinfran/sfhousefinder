@@ -97,6 +97,10 @@ Craigslist scraper timing can be tuned with:
 |---|---|---|
 | `CRAIGSLIST_NAV_TIMEOUT_MS` | `60000` | Page navigation timeout (ms) |
 | `CRAIGSLIST_LISTINGS_TIMEOUT_MS` | `15000` | Timeout waiting for search result rows (ms) |
+| `CRAIGSLIST_MAX_ATTEMPTS` | `3` | Retry attempts using a fresh browser/proxy connection each time |
+| `CRAIGSLIST_RETRY_BASE_DELAY_MS` | `20000` | Base delay between retries (ms) |
+| `CRAIGSLIST_PRE_NAV_MIN_DELAY_MS` | `10000` | Min random delay before each navigation (ms) |
+| `CRAIGSLIST_PRE_NAV_MAX_DELAY_MS` | `30000` | Max random delay before each navigation (ms) |
 | `CRAIGSLIST_CITY_COOLDOWN_MIN_MS` | `120000` | Min delay between cities in `--all-cities` mode (ms) |
 | `CRAIGSLIST_CITY_COOLDOWN_MAX_MS` | `300000` | Max delay between cities in `--all-cities` mode (ms) |
 

@@ -111,9 +111,9 @@ export const persistToMongo = async (payload: ScrapeOutput): Promise<Persistence
       )
     } else {
       skipReason =
-        "No current Zillow listings found; skipping deactivation since scrape was incomplete."
+        "No current Zillow listings found; skipping deactivation to avoid clearing existing listings from an empty result set."
       console.log(
-        "No current Zillow listings found; skipping deactivation since scrape was incomplete.",
+        "No current Zillow listings found; skipping deactivation to avoid clearing existing listings from an empty result set.",
       )
       console.log(
         `MongoDB zillow upsert complete: matched=${result.matchedCount}, modified=${result.modifiedCount}, upserted=${result.upsertedCount}, deactivated=0`,

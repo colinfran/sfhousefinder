@@ -7,6 +7,7 @@ import {
   EllipsisVertical,
   Map,
   NotebookPen,
+  Trash2,
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react"
@@ -110,6 +111,42 @@ const ListingActionsMenu = ({ listing }: ListingActionsMenuProps): JSX.Element =
     })
   }
 
+  const handleDeleteListing = (): void => {
+    setErrorMessage(null)
+
+    const confirmed = window.confirm(
+      `Delete this listing from ${listing.source}?\n\n${listing.address || listing.url}`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/listings/delete", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            source: listing.source,
+            listingId: listing.id,
+          }),
+        })
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as { error?: string } | null
+          throw new Error(payload?.error ?? "Failed to delete listing.")
+        }
+
+        router.refresh()
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Failed to delete listing.")
+      }
+    })
+  }
+
   return (
     <div className="flex flex-col items-end gap-1">
       <Dialog open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}>
@@ -159,6 +196,16 @@ const ListingActionsMenu = ({ listing }: ListingActionsMenuProps): JSX.Element =
                 ) : (
                   <ThumbsDown className="ml-auto h-4 w-4" />
                 )}
+              </DropdownMenuItem>
+            ) : null}
+            {hasAdminAccess ? (
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                disabled={isPending}
+                onSelect={handleDeleteListing}
+              >
+                Delete
+                <Trash2 className="ml-auto h-4 w-4" />
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

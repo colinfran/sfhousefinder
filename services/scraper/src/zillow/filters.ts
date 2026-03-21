@@ -1,3 +1,4 @@
+import type { CityTarget } from "./config"
 import type { RentalListing, ZillowListResult } from "./types"
 
 export const isSingleFamilyHome = (listing: ZillowListResult, mapped: RentalListing): boolean => {
@@ -41,4 +42,17 @@ export const isEntirePlace = (mapped: RentalListing): boolean => {
   }
 
   return true
+}
+
+export const matchesTargetCity = (listing: ZillowListResult, cityTarget: CityTarget): boolean => {
+  if (!cityTarget.requiredLocationKeywords?.length) {
+    return true
+  }
+
+  const normalizedText = [listing.address, listing.detailUrl]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase()
+
+  return cityTarget.requiredLocationKeywords.some((keyword) => normalizedText.includes(keyword))
 }

@@ -20,7 +20,7 @@ import {
   ROOT_ENV_PATH,
   type CityTarget,
 } from "./config"
-import { isEntirePlace, isSingleFamilyHome } from "./filters"
+import { isEntirePlace, isSingleFamilyHome, matchesTargetCity } from "./filters"
 import { buildOutputPayload, writeOutputToFile } from "./io"
 import { persistToMongo } from "./mongo"
 import { sendErrorDiscordAlert } from "../error-discord"
@@ -253,7 +253,14 @@ const runCityScrape = async (cityTarget: CityTarget): Promise<number> => {
       return 0
     }
 
-    const rentals = listResults
+    const cityMatchedResults = listResults.filter((listing) =>
+      matchesTargetCity(listing, cityTarget),
+    )
+    console.log(
+      `${cityMatchedResults.length} Zillow listings matched ${cityTarget.label} location filters.`,
+    )
+
+    const rentals = cityMatchedResults
       .map((listing) => ({
         listing,
         mapped: mapRentalListing(listing),

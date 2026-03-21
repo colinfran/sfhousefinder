@@ -1,8 +1,37 @@
 import { buildGoogleMapsUrl, parseBaths, parseBeds, parseNumber } from "./helpers"
 import type { CraigslistRawListing, RentalListing } from "./types"
 
+const extractNeighborhoodFromTitle = (title: string): string => {
+  const match = title.match(/\(([^)]+)\)\s*$/)
+  return match?.[1]?.trim() ?? ""
+}
+
+const cleanMetadataPrefix = (value: string): string => {
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim()
+
+  if (!normalized) {
+    return ""
+  }
+
+  return normalized
+    .replace(/^\d{1,2}\/\d{1,2}/, "")
+    .replace(/^\d+\s*(?:min|mins|hr|hrs|hour|hours)\s+ago/i, "")
+    .replace(/^\d+(?:\.\d+)?\s*br/i, "")
+    .replace(/^\/?\s*\d+(?:\.\d+)?\s*ba/i, "")
+    .replace(/^\d+\s*ft2/i, "")
+    .replace(/^\s*-\s*/, "")
+    .trim()
+}
+
 const normalizeLocation = (raw: CraigslistRawListing): string => {
-  return raw.hoodText.replace(/[()]/g, "").trim()
+  const cleaned = raw.hoodText.replace(/[()]/g, "").trim()
+  const withoutMetadata = cleanMetadataPrefix(cleaned)
+
+  if (withoutMetadata && /[a-z]/i.test(withoutMetadata)) {
+    return withoutMetadata
+  }
+
+  return extractNeighborhoodFromTitle(raw.title)
 }
 
 const normalizeAddress = (title: string, location: string): string => {

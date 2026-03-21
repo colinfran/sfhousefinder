@@ -6,6 +6,7 @@ export type CityTarget = {
   key: string
   label: string
   url: string
+  requiredLocationKeywords?: string[]
 }
 
 export const MIN_PRICE = 3000
@@ -67,30 +68,36 @@ export const CITY_TARGETS: CityTarget[] = [
     key: "san-francisco",
     label: "San Francisco, CA",
     url: SAN_FRANCISCO_RENTALS_URL,
+    requiredLocationKeywords: ["san francisco"],
   },
   {
     key: "daly-city",
     label: "Daly City, CA",
     url: DALY_CITY_RENTALS_URL,
+    requiredLocationKeywords: ["daly city"],
   },
   {
     key: "south-san-francisco",
     label: "South San Francisco, CA",
     url: SOUTH_SAN_FRANCISCO_RENTALS_URL,
+    requiredLocationKeywords: ["south san francisco", "south sf", "ssf"],
   },
   {
     key: "pacifica",
     label: "Pacifica, CA",
     url: PACIFICA_RENTALS_URL,
+    requiredLocationKeywords: ["pacifica"],
   },
   {
     key: "san-bruno",
     label: "San Bruno, CA",
     url: SAN_BRUNO_RENTALS_URL,
+    requiredLocationKeywords: ["san bruno"],
   },
   {
     key: "brisbane",
     label: "Brisbane, CA",
     url: BRISBANE_RENTALS_URL,
+    requiredLocationKeywords: ["brisbane"],
   },
 ]

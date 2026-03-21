@@ -95,6 +95,8 @@ const SUPPORTED_CITY_OPTIONS = [
   "San Mateo, CA",
   "South San Francisco, CA",
   "Pacifica, CA",
+  "San Bruno, CA",
+  "Brisbane, CA",
 ]
 
 const emptyData: DashboardData = {

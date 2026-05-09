@@ -9,7 +9,7 @@ export type CityTarget = {
 }
 
 export const MIN_PRICE = 3000
-export const MAX_PRICE = 4500
+export const MAX_PRICE = 4800
 export const MIN_BEDS = 2
 
 const parseNumberEnv = (value: string | undefined, fallback: number): number => {

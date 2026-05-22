@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config as loadEnv } from "dotenv"
 import { existsSync } from "node:fs"
-import type { Page } from "puppeteer"
+import type { Browser, Page } from "puppeteer"
 import {
   CITY_COOLDOWN_MAX_MS,
   CITY_COOLDOWN_MIN_MS,
@@ -131,7 +131,7 @@ const isBotProtectionPage = async (page: Page): Promise<boolean> => {
 const createAttemptPage = async (
   cityTarget: CityTarget,
   attempt: number,
-): Promise<{ browser: puppeteer.Browser; page: Page }> => {
+): Promise<{ browser: Browser; page: Page }> => {
   const browserLaunchArgs = ["--no-sandbox", "--disable-blink-features=AutomationControlled"]
   const executablePath = resolveExecutablePath()
   const proxyConfig = getProxyConfigForAttempt(PROXY_SERVER, {

@@ -114,7 +114,30 @@ const configurePage = async (page: Page): Promise<void> => {
   await page.setUserAgent(userAgent)
 
   await page.evaluateOnNewDocument(() => {
+    // Hide webdriver flag
     Object.defineProperty(navigator, "webdriver", { get: () => false })
+
+    // Fake plugins (real Chrome has at least a few)
+    Object.defineProperty(navigator, "plugins", {
+      get: () => [1, 2, 3, 4, 5],
+    })
+
+    // Fake languages
+    Object.defineProperty(navigator, "languages", {
+      get: () => ["en-US", "en"],
+    })
+
+    // Chrome runtime stub (PerimeterX checks for this)
+    if (!(window as Window & { chrome?: unknown }).chrome) {
+      ;(window as Window & { chrome?: unknown }).chrome = { runtime: {} }
+    }
+
+    // Permissions query override (headless Chrome returns 'denied' for notifications)
+    const origQuery = window.navigator.permissions.query.bind(window.navigator.permissions)
+    window.navigator.permissions.query = (params: PermissionDescriptor) =>
+      params.name === "notifications"
+        ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
+        : origQuery(params)
   })
 }
 
@@ -185,16 +208,41 @@ const loadListResultsWithRetries = async (
     const { browser, page } = await createAttemptPage(cityTarget, attempt)
 
     try {
-      await page.goto(cityTarget.url, {
+      const response = await page.goto(cityTarget.url, {
         waitUntil: "domcontentloaded",
         timeout: NAVIGATION_TIMEOUT_MS,
       })
+
+      const httpStatus = response?.status() ?? 0
+      if (httpStatus === 403 || httpStatus === 429) {
+        console.warn(`[zillow] HTTP ${httpStatus} received for ${cityTarget.label}. Waiting for challenge to resolve...`)
+        await sleep(8000)
+
+        const challengeResolved = await page
+          .evaluate(() => {
+            return (
+              !!document.querySelector("script#__NEXT_DATA__") ||
+              document.querySelectorAll('[class*="list-card"], [class*="StyledCard"]').length > 0
+            )
+          })
+          .catch(() => false)
+
+        if (!challengeResolved) {
+          console.log(`[zillow] Challenge not resolved for ${cityTarget.label}. Will retry.`)
+          botProtectionDetected = true
+          continue
+        }
+        console.log(`[zillow] Challenge resolved for ${cityTarget.label}, proceeding.`)
+      }
 
       try {
         await page.waitForSelector("script#__NEXT_DATA__", { timeout: NEXT_DATA_TIMEOUT_MS })
       } catch {
         console.log("__NEXT_DATA__ script not found within timeout for this attempt.")
       }
+
+      // Wait for JS hydration to settle before reading the DOM
+      await sleep(2000)
 
       lastHtml = await page.content().catch(() => "")
       lastTitle = await page.title().catch(() => "")

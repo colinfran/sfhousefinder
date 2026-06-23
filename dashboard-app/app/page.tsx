@@ -24,6 +24,13 @@ const HomePage = async ({ searchParams }: PageProps): Promise<JSX.Element> => {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 px-4 py-4 sm:px-6 sm:py-0">
       <div className="flex flex-col gap-4">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-medium">Project update</p>
+          <p className="mt-1 text-amber-900/90 dark:text-amber-100/90">
+            I found a house, so the backend scrapers are no longer running. This project is
+            still available as a demo, but it is no longer adding new listings.
+          </p>
+        </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Listings</h1>
           <p className="mt-1 text-xs text-muted-foreground">
